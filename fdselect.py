@@ -27,8 +27,9 @@ import string
 import signal
 
 class eof_policy_deferred_close:
-    def __init__(self):
+    def __init__(self, callback = None):
         self.__client = None
+        self.__cb = callback
 
     def register(self, client):
         assert self.__client == None
@@ -41,6 +42,8 @@ class eof_policy_deferred_close:
 
     def report_close(self, client):
         assert self.__client == client
+        if self.__cb is not None:
+            self.__cb(client)
         # Break the circular dependency
         self.__client = None
 
@@ -154,6 +157,21 @@ class parser_base:
             return 0, s
         else:
             return 1, s
+
+    def handle_input_line(self, s):
+        """Handle a line.  May be overridden.
+
+        Argument: a complete line (without the trailing line end).
+        This default implementation splits the line
+        whitespace-separated words.  It the calls a method named
+        self.line_WORD where WORD is the first word of the line.  That
+        method receives all the words as a list.
+        """
+
+        words = string.split(s)
+        if len(words):
+            method = getattr(self, "line_" + words[0])
+            method(words)
 
     def handle_read_eof(self, unparsed):
         self.parent.parser_eof()
