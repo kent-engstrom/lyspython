@@ -1,3 +1,8 @@
+Thu Aug  6 16:36:00 1998  Kent Engström  <kent@lysator.liu.se>
+
+	* cracklib.c: New file, module to access cracklib
+	* dilbert-fetch.py: Work-around for Python 1.5.1 bug
+
 Sun Jun  7 20:41:42 1998  Per Cederqvist  <ceder@lysator.liu.se>
 
 	* kombug.py: New file, which can be used to debug LysKOM clients.
