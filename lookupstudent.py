@@ -21,7 +21,7 @@ r = l.search_st("o=student.liu.se, o=liu.se",
 data = r[0][1]
 
 
-print "Gecos: %s" % data["gecos"][0]
+print "Gecos: %s" % unicode(data["gecos"][0], "utf-8").encode("latin-1")
 print
 print "Utbildning:"
 print "==========="
