@@ -807,7 +807,7 @@ class ProductList:
         return self.search_group_internal(**args)
     
     
-    def search_group_internal(self, grupp,
+    def search_group_internal(self, grupp, gruppkod,
                               min_pris, max_pris,
                               ordinarie,
                               begr_butik,
@@ -819,6 +819,7 @@ class ProductList:
                               ursprung,
                               p_klockor,
                               fat_karaktar,
+                              druva
                               ):
         if ordinarie:
             p_ordinarie = "1"
@@ -859,10 +860,19 @@ class ProductList:
             p_ursprung = urllib.quote(ursprung)
 
         grupp = urllib.quote(grupp)
-        url = "http://www.systembolaget.se/pris/owa/sokpipe.sokpara?p_wwwgrp=%s&p_varutyp=%s&p_ursprung=%s&p_prismin=%s&p_prismax=%s&p_type=%s&p_kl_1_1=%d&p_kl_1_2=%d&p_kl_2_1=%d&p_kl_2_2=%d&p_kl_3_1=%d&p_kl_3_2=%d&p_kl_fat=%d%s%s%s&p_butnr=%s&p_ordinarie=%s&p_back=" % \
+
+        if druva is not None:
+            # Druva
+            psp = ProductSearchPage().search(gruppkod)
+            (p_innehall, p_druva) = psp.get_code(druva)
+        else:
+            (p_innehall, p_druva) = (0,0)
+            
+        url = "http://www.systembolaget.se/pris/owa/sokpipe.sokpara?p_wwwgrp=%s&p_varutyp=%s&p_ursprung=%s&p_prismin=%s&p_prismax=%s&p_type=%s&p_innehall=%d&p_druva=%d&p_kl_1_1=%d&p_kl_1_2=%d&p_kl_2_1=%d&p_kl_2_2=%d&p_kl_3_1=%d&p_kl_3_2=%d&p_kl_fat=%d%s%s%s&p_butnr=%s&p_ordinarie=%s&p_back=" % \
               (grupp, p_varutyp, p_ursprung,
                min_pris, max_pris,
                p_type,
+               p_innehall, p_druva,
                p_klockor[0][0],p_klockor[0][1],
                p_klockor[1][0],p_klockor[1][1],
                p_klockor[2][0],p_klockor[2][1],
@@ -876,6 +886,59 @@ class ProductList:
         self.from_html_group(webpage, ordinarie)
 
         return self
+    
+# ProductSearchPage class
+
+class ProductSearchPage:
+    def __init__(self):
+        self.state = NEW
+        self.druvor = []
+        
+    # Parse the result
+    def from_html(self, webpage):
+        assert self.state == NEW
+
+        for d in MLimit(r'(?s)<select name="p_druva" class="selectDruva">(.*?)</select>',
+                        MList("<option",
+                              MSet([("nr", M('option value="([0-9]+)"')),
+                                    ("namn", M(">(.*)</option>")),
+                                    ]))).get(webpage):
+        
+            if d["namn"] <> "-":
+                self.druvor.append((int(d["nr"]), d["namn"]))
+
+        self.state = VALID
+        return self
+    
+    # Object validity
+    def valid(self):
+            return self.state == VALID
+
+    def search(self, groupcode):
+        url = "http://www.systembolaget.se/pris/owa/plGrupp.visa?p_grupp=%d&p_ordinarie=1" % groupcode
+        
+        webpage = WebPage(url).get()
+        self.from_html(webpage)
+
+        return self
+
+    # Search for a grape
+    def get_code(self, txt):
+        txt = string.lower(txt)
+        if txt[0:1] == "=":
+            p_innehall = 1
+            txt = txt[1:]
+        elif txt[0:1] == "-":
+            p_innehall = 3
+            txt = txt[1:]
+        else:
+            p_innehall = 2
+            
+        for (nr, namn) in self.druvor:
+            if string.lower(namn) == txt:
+                return (p_innehall, nr)
+
+        return (0,0)
     
 # COMMAND LINE OPERATION
 def main():
@@ -906,6 +969,7 @@ def main():
     pos_sotma = None
     pos_beska = None
     fat_karaktar = 0
+    druva = None
     
     F_HELP = 0
     F_NAMN = 1
@@ -968,6 +1032,8 @@ def main():
     
                                         "bara-varunr",
 
+                                        "druva=",
+
                                         # Hidden
                                         "webpage-debug",
                                         ])
@@ -1001,40 +1067,50 @@ def main():
         elif opt == "--röda-viner":
             funktion = F_PRODUKT
             grupp = "RÖDA VINER"
+            gruppkod = 1
             (pos_fyllighet, pos_stravhet, pos_fruktsyra) = range(0,3)
         elif opt == "--vita-viner":
             funktion = F_PRODUKT
             grupp = "VITA VINER"
+            gruppkod = 2
             (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
         elif opt == "--roséviner":
             funktion = F_PRODUKT
             grupp = "ROSÉVINER"
+            gruppkod = 3
             (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
         elif opt == "--mousserande-viner":
             funktion = F_PRODUKT
             grupp = "MOUSSERANDE VINER"
+            gruppkod = 4
             (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
         elif opt == "--starkvin":
             funktion = F_PRODUKT
             grupp = "STARKVIN M. M."
+            gruppkod = 5
         elif opt == "--sprit":
             funktion = F_PRODUKT
             grupp = "SPRIT"
+            gruppkod = 6
         elif opt == "--öl":
             funktion = F_PRODUKT
             grupp = "ÖL"
+            gruppkod = 7
             p_sotma_pos = 2
             (pos_beska, pos_fyllighet, pos_sotma) = range(0,3)
         elif opt == "--cider":
             funktion = F_PRODUKT
             grupp = "CIDER"
+            gruppkod = 8
             (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
         elif opt == "--blanddrycker":
             funktion = F_PRODUKT
             grupp = "BLANDDRYCKER"
+            gruppkod = 9
         elif opt == "--alkoholfritt":
             funktion = F_PRODUKT
             grupp = "ALKOHOLFRITT"
+            gruppkod = 10
         elif opt == "--min-pris":
             min_pris = optarg
         elif opt == "--max-pris":
@@ -1084,6 +1160,8 @@ def main():
             fat_karaktar = 2
         elif opt == "--bara-varunr":
             baravarunr = 1
+        elif opt == "--druva":
+            druva = optarg
         elif opt == "--webpage-debug":
             global WEBPAGE_DEBUG
             WEBPAGE_DEBUG = WEBPAGE_DEBUG + 1
@@ -1124,6 +1202,7 @@ def main():
     elif funktion == F_PRODUKT:
         # Produktsökning
         pl = ProductList().search_group(grupp = grupp,
+                                        gruppkod = gruppkod,
                                         min_pris = min_pris,
                                         max_pris = max_pris,
                                         sortiment = sortiment,
@@ -1136,6 +1215,7 @@ def main():
                                         ursprung = ursprung,
                                         p_klockor = p_klockor,
                                         fat_karaktar = fat_karaktar,
+                                        druva = druva,
                                         )
         if pl.valid():
             if kort or fullstandig:
@@ -1184,8 +1264,9 @@ def main():
        %s [{--fyllighet=N | --strävhet=N | --fruktsyra=N |
        %s   --sötma=N     | --beska=N}]
        %s [{--fat-karaktär | --ej-fat-karaktär}]
+       %s [ --druva=[{-,=}]DRUVA ]
        %s [{--bara-varunr | --kort | --fullständig}]
-    """ % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*19)
+    """ % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*20)
 
 
 if __name__ == '__main__':
