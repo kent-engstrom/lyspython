@@ -5,7 +5,7 @@
 
 import time
 import string
-import regex
+import re
 
 #
 # AUXILIARY ROUTINES
@@ -274,24 +274,31 @@ def FromUnixTime(t):
     (dy,dm,dd,th,tm,ts,wd,dayno,ds)=time.localtime(t)
     return FromYMD(dy,dm,dd)
 
-rx_dashed=regex.compile("^\([0-9]+\)-\([0-9]+\)-\([0-9]+\)$")
-rx_yyyymmdd=regex.compile("^\([0-9][0-9][0-9][0-9]\)\([0-9][0-9]\)\([0-9][0-9]\)$")
-rx_yymmdd=regex.compile("^\([0-9][0-9]\)\([0-9][0-9]\)\([0-9][0-9]\)$")
+rx_dashed=re.compile("^([0-9]+)-([0-9]+)-([0-9]+)$")
+rx_yyyymmdd=re.compile("^([0-9][0-9][0-9][0-9])([0-9][0-9])([0-9][0-9])$")
+rx_yymmdd=re.compile("^([0-9][0-9])([0-9][0-9])([0-9][0-9])$")
     
 def FromString(str):
     newdate = Date() # Allocates an invalid date
-    if rx_dashed.search(str)<>-1:
-	newdate.SetYMD(string.atoi(rx_dashed.group(1)),
-		       string.atoi(rx_dashed.group(2)),
-		       string.atoi(rx_dashed.group(3)))
-    elif rx_yyyymmdd.search(str)<>-1:
-	newdate.SetYMD(string.atoi(rx_yyyymmdd.group(1)),
-		       string.atoi(rx_yyyymmdd.group(2)),
-		       string.atoi(rx_yyyymmdd.group(3)))
+    m = rx_dashed.match(str)
+    if m:
+	newdate.SetYMD(string.atoi(m.group(1)),
+		       string.atoi(m.group(2)),
+		       string.atoi(m.group(3)))
+        return newdate
 
-    elif rx_yymmdd.search(str)<>-1:
-	newdate.SetYMD(string.atoi(rx_yymmdd.group(1)),
-		       string.atoi(rx_yymmdd.group(2)),
-		       string.atoi(rx_yymmdd.group(3)))
+    m = rx_yyyymmdd.match(str)
+    if m:
+	newdate.SetYMD(string.atoi(m.group(1)),
+		       string.atoi(m.group(2)),
+		       string.atoi(m.group(3)))
+        return newdate
+
+    m = rx_yymmdd.match(str)
+    if m:
+	newdate.SetYMD(string.atoi(m.group(1)),
+		       string.atoi(m.group(2)),
+		       string.atoi(m.group(3)))
+        return newdate
 
     return newdate

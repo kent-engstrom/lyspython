@@ -12,7 +12,7 @@
 #
 #			/ceder 1999-11-15
 
-import regex
+import re
 import string
 import time
 
@@ -133,33 +133,44 @@ def FromUnixTime(t):
 def FromToday():
     return FromUnixTime(time.time())
 
-rx_dashed=regex.compile("^\([0-9]+\)-\([0-9]+\)-\([0-9]+\)$")
-rx_dashed_coloned=regex.compile("^\([0-9]+\)-\([0-9]+\)-\([0-9]+\)"
-				" \([0-9]+\):\([0-9]+\)\(:\([0-9]+\)\)?$")
-rx_yyyymmdd=regex.compile("^\([0-9][0-9][0-9][0-9]\)\([0-9][0-9]\)\([0-9][0-9]\)$")
-rx_yymmdd=regex.compile("^\([0-9][0-9]\)\([0-9][0-9]\)\([0-9][0-9]\)$")
+rx_dashed=re.compile("^([0-9]+)-([0-9]+)-([0-9]+)$")
+rx_dashed_coloned=re.compile("^([0-9]+)-([0-9]+)-([0-9]+)"
+				" ([0-9]+):([0-9]+)(:([0-9]+))?$")
+rx_yyyymmdd=re.compile("^([0-9][0-9][0-9][0-9])([0-9][0-9])([0-9][0-9])$")
+rx_yymmdd=re.compile("^([0-9][0-9])([0-9][0-9])([0-9][0-9])$")
     
 def FromString(str):
     newtime = Time() # Allocates an invalid time
-    if rx_dashed_coloned.search(str)<>-1:
-	newtime.SetYMDHMS(string.atoi(rx_dashed_coloned.group(1)),
-			  string.atoi(rx_dashed_coloned.group(2)),
-			  string.atoi(rx_dashed_coloned.group(3)),
-			  string.atoi(rx_dashed_coloned.group(4)),
-			  string.atoi(rx_dashed_coloned.group(5)),
-			  string.atoi(rx_dashed_coloned.group(7) or "0"))
-    elif rx_dashed.search(str)<>-1:
-	newtime.SetYMD(string.atoi(rx_dashed.group(1)),
-		       string.atoi(rx_dashed.group(2)),
-		       string.atoi(rx_dashed.group(3)))
-    elif rx_yyyymmdd.search(str)<>-1:
-	newtime.SetYMD(string.atoi(rx_yyyymmdd.group(1)),
-		       string.atoi(rx_yyyymmdd.group(2)),
-		       string.atoi(rx_yyyymmdd.group(3)))
 
-    elif rx_yymmdd.search(str)<>-1:
-	newtime.SetYMD(string.atoi(rx_yymmdd.group(1)),
-		       string.atoi(rx_yymmdd.group(2)),
-		       string.atoi(rx_yymmdd.group(3)))
+    m = rx_dashed_coloned.match(str)
+    if m:
+	newtime.SetYMDHMS(string.atoi(m.group(1)),
+			  string.atoi(m.group(2)),
+			  string.atoi(m.group(3)),
+			  string.atoi(m.group(4)),
+			  string.atoi(m.group(5)),
+			  string.atoi(m.group(7) or "0"))
+        return newtime
+    
+    m = rx_dashed.match(str)
+    if m:
+	newtime.SetYMD(string.atoi(m.group(1)),
+		       string.atoi(m.group(2)),
+		       string.atoi(m.group(3)))
+        return newtime
+    
+    m = rx_yyyymmdd.match(str)
+    if m:
+	newtime.SetYMD(string.atoi(m.group(1)),
+		       string.atoi(m.group(2)),
+		       string.atoi(m.group(3)))
+        return newtime
+
+    m = rx_yymmdd.match(str)
+    if m:
+	newtime.SetYMD(string.atoi(m.group(1)),
+		       string.atoi(m.group(2)),
+		       string.atoi(m.group(3)))
+        return newtime
 
     return newtime
