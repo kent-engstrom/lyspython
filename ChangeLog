@@ -5,6 +5,8 @@
 
 	Fix bug when searching both "ordinarie" and "beställning"; 
 	no results were given if "ordinarie" failed.
+
+	Add grape search.
 	
 2003-01-21  David Björkevik <davidb@lysator.liu.se>
 	* latexquote.py: new file, latex-quoting.
