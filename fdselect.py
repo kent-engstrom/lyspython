@@ -17,6 +17,9 @@ class parser_base:
 
     def __init__(self, parent):
         self.__read_queue = ""
+        # EOF flag.  0: normal.  1: eof seen, but not yet reported.
+        # 2: eof reported to handle_read_eof().
+        self.__eof = 0
         self.parent = parent
 
     def __len__(self):
@@ -26,12 +29,19 @@ class parser_base:
         if data != "":
             self.__read_queue = self.__read_queue + data
         res, left = self.handle_read(self.__read_queue)
-        if left == self.__read_queue and self.__read_eof == 1:
+        # FIXME: error!
+        if left == self.__read_queue and self.__eof == 1:
             self.handle_read_eof(left)
-            self.__read_eof = 2
+            self.__eof = 2
         self.__read_queue = left
         return res
         
+    def append_eof(self):
+        self.__eof = 1
+
+    def eof_seen(self):
+        return not not self.__eof
+
     def handle_read(self, s):
         """Handle read data.  May be overridden.
 
@@ -77,7 +87,6 @@ class fd_base:
         self.wfd = wfd
         self.__write_queue = ""
         self.__write_eof = 0
-        self.__read_eof = 0
         if parser is not None:
             self.__parser = parser(self)
         self.__deferred_close = 0
@@ -85,7 +94,7 @@ class fd_base:
         self.dispatcher.register(self)
 
     def read_fd(self):
-        if self.__read_eof:
+        if self.__parser.eof_seen():
             return None
         if too_large(self.__parser, self.maxreadbuf):
             return None
@@ -108,8 +117,7 @@ class fd_base:
                 return 0
             return self.read_error(e)
         if data == "":
-            self.__read_eof = 1
-            return 0
+            self.__parser.append_eof()
         return self.__parser.append(data)
 
     def synthetic_read_event(self):
@@ -139,7 +147,7 @@ class fd_base:
 
     def deferred_close(self):
         self.__deferred_close = 1
-        if self.__write_eof:
+        if self.__write_eof or len(self.__write_queue) == 0:
             self.close()
 
     def close(self):
@@ -149,7 +157,6 @@ class fd_base:
         self.close()
 
     def read_error(self, eno):
-        print "FOO", eno
         self.error()
 
     write_error = read_error
@@ -253,15 +260,12 @@ class dispatcher:
         self.__closing = 0
 
     def register(self, client):
-        print "REGISTER", client
         self.__clients[client] = None
 
     def unregister(self, client):
-        print "UNREGISTER", client
         del self.__clients[client]
 
     def close(self):
-        print "CLOSE"
         self.__closing = 1
 
     def main_iteration(self, maxtimeout=None, r_set=[], w_set=[]):
