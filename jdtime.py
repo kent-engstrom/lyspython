@@ -59,12 +59,18 @@ class Time(jddate.Date):
     def GetJD(self):
 	return jddate.Date.GetJD(self) + self.__getjd()
 
+    def GetDate(self):
+        # Get a new jddate.Date object for the current date
+        return jddate.FromJD(jddate.Date.GetJD(self))
+
     def __getjd(self):
 	return (self.__h + (self.__m + (self.__s / 60.0)) / 60.0) / 24.0
 
+    def GetHMS(self):
+	return (self.__h, self.__m, self.__s)
+
     def GetYMDHMS(self):
-	(y, m, d) = jddate.Date.GetYMD(self)
-	return (y, m, d, self.__h, self.__m, self.__s)
+	return jddate.Date.GetYMD(self) + self.GetHMS()
 
     def GetString_YYYY_MM_DD_HH_MM_SS(self):
 	return (jddate.Date.GetString_YYYY_MM_DD(self) +
@@ -99,6 +105,12 @@ def FromJD(jd):
     newtime.SetJD(jd)
     return newtime
 
+def FromDate(date):
+    newtime = Time()
+    (y, m, d) = date.GetYMD()
+    newtime.SetYMD(y, m, d)
+    return newtime
+
 def FromYMD(y, m, d):
     newtime = Time()
     newtime.SetYMD(y, m, d)
@@ -114,13 +126,12 @@ def FromYWD(y, w, d):
     newtime.SetYWD(y, w, d)
     return newtime
 
-def FromToday():
-    (dy,dm,dd,th,tm,ts,wd,dayno,ds)=time.localtime(time.time())
-    return FromYMDHMS(dy, dm, dd, th, tm, ts)
-
 def FromUnixTime(t):
     (dy,dm,dd,th,tm,ts,wd,dayno,ds)=time.localtime(t)
     return FromYMDHMS(dy, dm, dd, th, tm, ts)
+
+def FromToday():
+    return FromUnixTime(time.time())
 
 rx_dashed=regex.compile("^\([0-9]+\)-\([0-9]+\)-\([0-9]+\)$")
 rx_dashed_coloned=regex.compile("^\([0-9]+\)-\([0-9]+\)-\([0-9]+\)"

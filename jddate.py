@@ -1,5 +1,6 @@
 # Date class for Python
-# Copyright 1997, 1998 Kent Engström.
+# Copyright 1997, 1998, 2000 Kent Engström.
+
 # Released under the GNU GPL.
 
 import time
@@ -194,6 +195,12 @@ class Date:
 
     # Getting some other dates from the current
     
+    def GetYearStart(self):
+        return FromYMD(self.__y, 1, 1)
+    
+    def GetYearEnd(self):
+        return FromYMD(self.__y + 1, 12, 31)
+    
     def GetMonthStart(self):
         return FromYMD(self.__y, self.__m, 1)
     
@@ -205,8 +212,18 @@ class Date:
         else:
             y = self.__y
         return FromYMD(y, m, 1) - 1
-
-    # Adding an integer: step that many days into the future
+ 
+    def GetWeekStart(self):
+        # Monday is the first day of the week
+        (y, w, d) = self.GetYWD()
+        return self - d + 1
+    
+    def GetWeekEnd(self):
+        # Sunday is the last day of the week
+        (y, w, d) = self.GetYWD()
+        return self + 7 - d
+    
+   # Adding an integer: step that many days into the future
 
     def __add__(self, days):
 	return FromJD(self.GetJD() + days)

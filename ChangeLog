@@ -1,3 +1,15 @@
+2001-01-02  Kent Engstrom  <kent@lysator.liu.se>
+
+	* jdtime.py (Time.GetDate): New function.
+	(Time.GetHMS): New function.
+	(Time.FromDate): New function.
+	(Time.FromToday): Use FromUnixTime.
+
+	* jddate (Date.GetYearStart): New function.
+	(Date.GetYearEnd): New function.
+	(Date.GetWeekStart): New function.
+	(Date.GetWeekEnd): New function.
+
 2000-12-13  Kent Engström  <kent@unit.liu.se>
 
 	* jddate (Date.__hash__): New function.
