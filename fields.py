@@ -88,10 +88,12 @@ class FieldSet:
         # Manufacture the tail of an SQL "INSERT INTO"
         # statement:
 
-        col_list = self.__fields.keys()
+        col_list = []
         val_list = []
-        for k in col_list:
-            val_list.append(self.__fields[k].convert_to_sql())
+        for k in self.__fields.keys():
+            if not self.__fields[k].get_option("no_update",0):
+                col_list.append(k)
+                val_list.append(self.__fields[k].convert_to_sql())
         return "(%s) VALUES(%s)" % (string.join(col_list,","),
                                     string.join(val_list,","))
 
