@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: Latin-1 -*-
-# (C) 2001-2002 Kent Engström. Released under the GNU GPL.
+# (C) 2001-2003 Kent Engström. Released under the GNU GPL.
 
 import sys
 import string
@@ -341,31 +341,38 @@ class Search:
     def valid(self):
         return self.dict.has_key("typlista")
     
-    def to_string(self):
+    def to_string(self, baravarunr = 0):
         f = cStringIO.StringIO()
-        for typ in self.dict["typlista"]:
-            f.write(typ["typrubrik"] + "\n\n")
-            for vara in typ["prodlista"]:
-                f.write("%7s  %s\n" % (vara["varunr"],
-                                       vara["namn"]))
-                fps = []
-                for forp in vara["förplista"]:
-                    if forp["allabutiker"] == "Ja":
-                        ab = " alla"
-                    else:
-                        ab = ""
-                    fps.append("%11s (%s)%s" % (forp["pris"],
-                                                  forp["volym"],
-                                                  ab))
-                #fps_txt = string.join(fps, ", ")
-                f.write("         %4s %-32s %s\n" % (vara["årgång"],
-                                               vara["land"],
-                                               fps[0]))
-                for fp in fps[1:]:
-                    f.write("                                               %s\n" % fp)
-                    
+
+        if baravarunr:
+            for typ in self.dict["typlista"]:
+                for vara in typ["prodlista"]:
+                    f.write("%s\n" % (vara["varunr"]))
+        else:
+            for typ in self.dict["typlista"]:
+                f.write(typ["typrubrik"] + "\n\n")
+                for vara in typ["prodlista"]:
+                    f.write("%7s  %s\n" % (vara["varunr"],
+                                           vara["namn"]))
+                    fps = []
+                    for forp in vara["förplista"]:
+                        if forp["allabutiker"] == "Ja":
+                            ab = " alla"
+                        else:
+                            ab = ""
+                        fps.append("%11s (%s)%s" % (forp["pris"],
+                                                      forp["volym"],
+                                                      ab))
+                    #fps_txt = string.join(fps, ", ")
+                    f.write("         %4s %-32s %s\n" % (vara["årgång"],
+                                                   vara["land"],
+                                                   fps[0]))
+                    for fp in fps[1:]:
+                        f.write("                                               %s\n" % fp)
+                        
+                    f.write("\n")
                 f.write("\n")
-            f.write("\n")
+
         return f.getvalue()
 
 class SearchFromWeb(Search):
@@ -412,29 +419,33 @@ class ProductSearch:
     def valid(self):
         return self.dict.has_key("prodlista")
     
-    def to_string(self):
+    def to_string(self, baravarunr = 0):
         f = cStringIO.StringIO()
         
-        f.write(self.dict["rubrik"] + "\n\n")
-        
-        for vara in self.dict["prodlista"]:
-            f.write("%7s  %s\n" % (vara["varunr"],
-                                   vara["namn"]))
-            fps = []
-            for forp in vara["förplista"]:
-                if forp["allabutiker"] == "Ja":
-                    ab = " alla"
-                else:
-                    ab = ""
-                fps.append("%11s (%s)%s" % (forp["pris"], forp["volym"], ab))
-            f.write("         %4s %-32s %s\n" % (vara.get("årgång",""),
-                                                 vara["land"],
-                                                 fps[0]))
-            for fp in fps[1:]:
-                f.write("                                               %s\n" % fp)
-                    
+        if baravarunr:
+            for vara in self.dict["prodlista"]:
+                f.write("%s\n" % (vara["varunr"]))
+        else:
+            f.write(self.dict["rubrik"] + "\n\n")
+           
+            for vara in self.dict["prodlista"]:
+                f.write("%7s  %s\n" % (vara["varunr"],
+                                      vara["namn"]))
+                fps = []
+                for forp in vara["förplista"]:
+                    if forp["allabutiker"] == "Ja":
+                        ab = " alla"
+                    else:
+                        ab = ""
+                        fps.append("%11s (%s)%s" % (forp["pris"], forp["volym"], ab))
+                f.write("         %4s %-32s %s\n" % (vara.get("årgång",""),
+                                                    vara["land"],
+                                                    fps[0]))
+                for fp in fps[1:]:
+                    f.write("                                               %s\n" % fp)
+                       
+                f.write("\n")
             f.write("\n")
-        f.write("\n")
         return f.getvalue()
 
 class ProductSearchFromWeb(ProductSearch):
@@ -451,7 +462,8 @@ class ProductSearchFromWeb(ProductSearch):
                  p_varutyp = None,
                  p_ursprung = None,
                  p_klockor = [0,0,0],
-                 p_fat_k = 0):
+                 p_fat_k = 0,
+                 ):
         if best:
             ordinarie = "0"
         else:
@@ -609,6 +621,7 @@ soundex = 0
 kort = 0
 butiker = 0
 barabutiker = 0
+baravarunr = 0
 lan = "99"
 ort = None
 min_pris = 0
@@ -688,6 +701,8 @@ options, arguments = getopt.getopt(sys.argv[1:],
                                     
                                     "fat-karaktär",
                                     "ej-fat-karaktär",
+
+                                    "bara-varunr",
                                     ])
 
 for (opt, optarg) in options:
@@ -800,6 +815,8 @@ for (opt, optarg) in options:
         p_fat_k = 1
     elif opt == "--ej-fat-karaktär":
         p_fat_k = 2
+    elif opt == "--bara-varunr":
+        baravarunr = 1
     else:
         sys.stderr.write("Internt fel (%s ej behandlad)" % opt)
         sys.exit(1)
@@ -837,7 +854,7 @@ elif funktion == F_NAMN:
     # Namnsökning
         s = SearchFromWeb(namn, best, soundex)
         if s.valid():
-            print s.to_string(),
+            print s.to_string(baravarunr = baravarunr),
         else:
             print "Sökningen gav inga svar."
 
@@ -855,9 +872,10 @@ elif funktion == F_PRODUKT:
                                  p_varutyp = p_varutyp,
                                  p_ursprung = p_ursprung,
                                  p_klockor = p_klockor,
-                                 p_fat_k = p_fat_k)
+                                 p_fat_k = p_fat_k,
+                                 )
         if s.valid():
-            print s.to_string(),
+            print s.to_string(baravarunr = baravarunr),
         else:
             print "Sökningen gav inga svar."
 
@@ -878,8 +896,9 @@ else: # F_HELP
     print "Namnsökning:"
     print """
    %s [--beställningssortimentet] [--soundex]
+   %s [--bara-varunr]
    %s  --namn=NAMN
-""" % (sys.argv[0], " " * len(sys.argv[0]))
+""" % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*2)
     print "Produktsökning:"
     print """
    %s { --röda-viner   | --vita-viner   |
@@ -898,6 +917,7 @@ else: # F_HELP
    %s [{--fyllighet=N | --strävhet=N | --fruktsyra=N |
    %s   --sötma=N     | --beska=N}]
    %s [{--fat-karaktär | --ej-fat-karaktär}]
-""" % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*15)
+   %s [--bara-varunr]
+""" % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*16)
     
     

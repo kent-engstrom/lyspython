@@ -1,3 +1,9 @@
+2003-01-05  Kent Engström  <kent@lysator.liu.se>
+
+	* systembolaget.py: Add option "--bara-varunr" to
+	the name and product searches. This is intented for
+	scripting purposes.
+
 2002-11-25  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py (MSVolym.clean): Fix bug that resulted in
