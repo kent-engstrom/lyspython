@@ -7,6 +7,14 @@ import cStringIO
 import urllib
 import getopt
 
+try:
+    from regexpmatcher import M, MS, MSDeH, MSet, MList, MLimit
+except ImportError:
+    sys.stderr.write("*"*72 + "\nYou need regexpmatcher.py, which is "
+                     "available at the same place as\nsystembolaget.py\n" \
+                     + "*"*72 + "\n")
+    raise
+
 # Län
 
 lanslista = [
@@ -97,53 +105,10 @@ def move_year_to_front(name):
         name = m.group(1) + " " + string.strip(name[:-4])
     return name
 
-def findall_pos(pattern, data, s_pos, e_pos):
-    # Find the position of the beginning of each match; search for next match after the
-    # end of the current
-    l = []
-    pos = s_pos
-    patre = re.compile(pattern)
-    while 1:
-        m = patre.search(data, pos, e_pos)
-        if m:
-            l.append(m.start(0))
-            pos = m.end(0)
-        else:
-            return l
-
 def left_zero_pad(str, minsize):
     return ("0"*minsize + str)[-minsize:]
 
 # Classes matching a single piece of data
-
-class M:
-    def __init__(self, pattern, advance=1):
-        self.pattern = self.elaborate_pattern(pattern)
-        self.re = re.compile(self.pattern)
-        self.advance = advance
-        
-    def match(self, data, s_pos, e_pos):
-        m = self.re.search(data, s_pos, e_pos)
-        if m:
-            if debug: print "Found", m.group(1)
-            data = self.clean(m.group(1))
-            if self.advance:
-                return (data, m.end(1))
-            else:
-                return (data, s_pos)
-        else:
-            if debug: print "Not found"
-            return (None, s_pos)
-
-    def clean(self, data):
-        return data
-
-    def elaborate_pattern(self, pattern):
-        return pattern
-
-class MS(M):
-    def clean(self, data):
-        return string.join(string.split(string.strip(data)), " ")
 
 class MSF(MS):
     def elaborate_pattern(self, pattern):
@@ -154,79 +119,12 @@ class MSC(MS):
         return r'<td width=70><center><img src="/bilder/klock_([0-9]+).gif"\n><br> *%s *</center></td>' % pattern
 
 
-class MSDeH(MS):
-    def clean(self, data):
-        return re.sub("&nbsp;", " ",
-                      re.sub("<.*?>", "",
-                             string.join(string.split(string.strip(data)), " ")))
-
 class MSVolym(MS):
     def clean(self, data):
         return re.sub("ml", " ml",
                       string.join(string.split(string.strip(data)), " "))
 
 
-# Class matching a set of data, producing a dictionary
-
-class MSet:
-    def __init__(self, matchers):
-        self.matchers = matchers
-        
-    def match(self, data, s_pos, e_pos):
-        # Execution
-        dict = {}
-        for (name, m) in self.matchers:
-            if debug:
-                print "Looking for",name,"between",s_pos,"and",e_pos
-                print "--> %s" % data[s_pos:min(s_pos+110,e_pos)]
-            (found, s_pos) = m.match(data, s_pos, e_pos)
-            if found: # Subtle: empty dict or list is also false!
-                dict[name] = found
-        return (dict, s_pos)
-
-# Class matching a list of data, producing a list
-
-class MList:
-    def __init__(self, begin, matcher):
-        self.begin = begin
-        self.matcher = matcher
-        
-    def match(self, data, s_pos, e_pos):
-        # Execution
-        list = []
-        pos = findall_pos(self.begin, data, s_pos, e_pos) + [e_pos]
-        if debug: print "Positions for", self.begin,":", pos
-        for i in range(0,len(pos)-1):
-            if debug:
-                print "Looking for list entry between",pos[i],"and",pos[i+1]
-                if (pos[i+1] - pos[i]) < 400:
-                    print "Entry is:", data[pos[i]:pos[i+1]]
-            (found, dummy_pos) = self.matcher.match(data, pos[i], pos[i+1])
-            list.append(found)
-        return (list, e_pos)
-
-# Class narrowing the allowable search range without doing matching on its own
-
-class MLimit:
-    def __init__(self, pattern, matcher):
-        self.pattern = pattern
-        self.re = re.compile(self.pattern)
-        self.matcher = matcher
-        
-    def match(self, data, s_pos, e_pos):
-        #print "Before limit", s_pos,"to", e_pos
-        #print "--> %s" % data[s_pos:s_pos+60]
-        
-        m = self.re.search(data, s_pos, e_pos)
-        if m:
-            (s_pos, e_pos) = m.span(1)
-            #print "After limit", s_pos,"to", e_pos
-            #print "--> %s" % data[s_pos:s_pos+40]
-            return self.matcher.match(data, s_pos, e_pos)
-        else:
-            #print "Limit failed"
-            return (None, s_pos) # or should we call the matcher with empty data?
-    
 # Product class
 
 prod_m = MSet([("grupp", MS(r"<tr><td width=144> </td><td>\n(.+)\n")),

@@ -1,3 +1,9 @@
+2001-12-18  Kent Engström  <kent@lysator.liu.se>
+
+	* regexpmatcher.py: New file containing classes that used to be in
+	systembolaget.py. They can now be used in other programs.
+	* systembolaget.py: Moved generic matching classes to new file.
+
 2001-11-25  Kent Engstrom  <kent@lysator.liu.se>
 
 	* systembolaget.py: Add --begränsa-butik option. Show the store
