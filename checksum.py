@@ -91,6 +91,8 @@ def calculate_isbn_checksum(digits):
     if sum == None:
 	return None
     checksum = 11 - (sum % 11)
+    if checksum == 11:
+	checksum = 0
     if checksum < 10:
 	return chr(ord('0') + checksum)
     else:
