@@ -109,6 +109,9 @@ class Date:
 	    return "<Date %04d-%02d-%02d>"%(self.__y, self.__m, self.__d)
 	else:
 	    return "<Date invalid>"
+    
+    def IsValid(self):
+	return self.__valid
 
     # Setting the date in different formats
 
@@ -120,7 +123,16 @@ class Date:
 	    self.__valid = 0
 
     def SetYMD(self, y, m, d): # Year, month, date
+	# Controversial issue: how are we to handle two-digit dates?
+	# For the moment being, we choose the same approach as in
+	# the Fuego module.
+	if y >= 0 and y < 80:
+	    y = y + 2000
+	elif y >= 80 and y < 100:
+	    y = y + 1900
+
 	# Check this date by converting to JD and back.
+	# This could be done faster but not simpler :-)
 	jd = ymd_to_jd(y, m, d)
 	(y2, m2, d2) = jd_to_ymd(jd)
 	if y == y2 and m == m2 and d == d2:
@@ -179,14 +191,22 @@ class Date:
     def __add__(self, days):
 	return FromJD(self.GetJD() + days)
 
+    def __radd__(self, days):
+	return FromJD(self.GetJD() + days)
+
     # Subtracting an integer: step that many days into the past
     # Subtracting two dates: get difference in days
 
-    def __sub__(self, right):
-	if type(right) == type(0):
-	    return FromJD(self.GetJD() - days)
+    def __sub__(self, other):
+	if type(other) == type(0):
+	    return FromJD(self.GetJD() - other)
 	else: 
-	    return self.GetJD()-right.GetJD()
+	    return self.GetJD()-other.GetJD()
+
+    # Comparison between two dates: compare the JDs
+
+    def __cmp__(self, other):
+	return cmp(self.GetJD(), other.GetJD())
 
 #
 # INITIALIZERS FOR THE DATE CLASS
@@ -219,7 +239,7 @@ rx_yymmdd=regex.compile("^\([0-9][0-9]\)\([0-9][0-9]\)\([0-9][0-9]\)$")
     
 def FromString(str):
     newdate = Date() # Allocates an invalid date
-    if rx_dashed.search(str)<>-1: # FIXME: YY-MM-DD and Y2K?
+    if rx_dashed.search(str)<>-1:
 	newdate.SetYMD(string.atoi(rx_dashed.group(1)),
 		       string.atoi(rx_dashed.group(2)),
 		       string.atoi(rx_dashed.group(3)))
@@ -228,7 +248,7 @@ def FromString(str):
 		       string.atoi(rx_yyyymmdd.group(2)),
 		       string.atoi(rx_yyyymmdd.group(3)))
 
-    elif rx_yymmdd.search(str)<>-1: # FIXME: YYMMDD and Y2K?
+    elif rx_yymmdd.search(str)<>-1:
 	newdate.SetYMD(string.atoi(rx_yymmdd.group(1)),
 		       string.atoi(rx_yymmdd.group(2)),
 		       string.atoi(rx_yymmdd.group(3)))
