@@ -72,7 +72,7 @@ class eof_policy_process_close:
     def __init__(self):
         self.__clients = {}
         self.__closed = {}
-        seld.__pids = {}
+        self.__pids = {}
 
     def register(self, client):
         assert self.__closed == {}
@@ -93,14 +93,14 @@ class eof_policy_process_close:
 
     def __check(self):
         if len(self.__closed) == len(self.__clients) \
-           and len(self.__pids) == 1:
+           and len(self.__pids) == 0:
 
             for cl in self.__closed.keys():
                 cl.close()
 
     def report_close(self, client):
-        self.__clients = None
-        self.__closed = None
+        self.__clients = {}
+        self.__closed = {}
 
 class parser_base:
     input_line_end = "\n"
@@ -158,6 +158,9 @@ class parser_base:
     def handle_read_eof(self, unparsed):
         self.parent.parser_eof()
 
+    def write(self, s):
+        self.parent.write(s)
+
 
 def too_large(s, limit):
     if limit is None:
@@ -179,6 +182,7 @@ class fd_base:
         self.eof_policy = eof_policy
         if parser is not None:
             self.__parser = parser(self)
+            assert self.__parser is not None
         self.__deferred_close = 0
         self.dispatcher = dispatcher
         self.dispatcher.register(self)
@@ -353,6 +357,7 @@ class process(fd_owner):
         os.close(in_r)
         os.close(out_w)
         os.close(err_w)
+        assert stdout_parser is not None
         fd_owner.__init__(self, dispatcher, stdout_parser, eof_policy,
                           out_r, in_w)
         self.stderr_object = fd_owner(dispatcher, stderr_parser,
@@ -365,7 +370,7 @@ class process(fd_owner):
     def child_status(self, pid, status):
         assert pid == self.__child_pid
         if os.WIFEXITED(status):
-            self.child_exited(pid, os.WIFEXITSTATUS(status))
+            self.child_exited(pid, os.WEXITSTATUS(status))
         elif os.WIFSTOPPED(status):
             self.child_stopped(pid, os.WSTOPSIG(status))
         elif os.WIFSIGNALED(status):
@@ -375,7 +380,7 @@ class process(fd_owner):
 
     def child_exited(self, pid, status):
         assert pid == self.__child_pid
-        self.child_dead(self, pid)
+        self.child_dead(pid)
         if status != 0:
             self.error()
 
@@ -385,7 +390,7 @@ class process(fd_owner):
 
     def child_signaled(self, pid, sig):
         assert pid == self.__child_pid
-        self.child_dead(self, pid)
+        self.child_dead(pid)
         self.error()
 
     def child_dead(self, pid):
@@ -458,6 +463,8 @@ class dispatcher:
                 if e.errno == errno.ECHILD:
                     break
                 raise
+            if pid == 0:
+                break
             pidmap[pid].child_status(pid, status)
 
     def toploop(self):
