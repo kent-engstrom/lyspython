@@ -1,3 +1,7 @@
+Sat May  2 22:11:09  Kent Engström  <kent@lysator.liu.se>
+
+	* dilbert-fetch.py: New file, comics retrieval.
+	
 Sat May  2 21:28:47  Kent Engström  <kent@lysator.liu.se>
 
 	* jddate.py: New file, date conversions.
