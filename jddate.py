@@ -1,5 +1,5 @@
 # Date class for Python
-# Copyright 1997 Signum Support AB.
+# Copyright 1997, 1998 Kent Engström.
 # Released under the GNU GPL.
 
 import time
