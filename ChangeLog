@@ -1,3 +1,9 @@
+2002-06-07  Erik Forsberg  <forsberg@lysator.liu.se>
+	* lookupstudent.py: Fix bug that made usernames look ugly if they
+	contained non-ASCII characters. Check if programcode and/or
+	coursecode exists, and print a message instead of just throwing an
+	exception. Use /usr/bin/env python instead of /usr/bin/python
+
 2002-05-23  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py: Adapt to the change from "Druvsorter" to

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # lookupstudent.py - A Quick hack to see what courses a person attends, and
 # what education he's registrered on.
 # Copyright (c) 2002 Erik Forsberg <forsberg@lysator.liu.se>
@@ -23,38 +23,45 @@ data = r[0][1]
 
 print "Gecos: %s" % unicode(data["gecos"][0], "utf-8").encode("latin-1")
 print
-print "Utbildning:"
-print "==========="
-filter = '(|'
-for utbildning in data["programcode"]:
-    filter+='(cn='+utbildning+')'
-filter+=')'
+if data.has_key("programcode"):
+    print "Utbildning:"
+    print "==========="
+    filter = '(|'
+    for utbildning in data["programcode"]:
+        filter+='(cn='+utbildning+')'
+    filter+=')'
 
-utbildningar = l.search_st("ou=groups, o=student.liu.se, o=liu.se",
-                     ldap.SCOPE_SUBTREE,
-                     filter,
-                     ['cn', 'description'])
-for utb in utbildningar:
-    utbkod = utb[1]['cn'][0]
-    utbnamn = unicode(utb[1]['description'][0], 'utf8').encode('latin-1')
-    print "%s" % utbkod + " "*(25-len(utbkod)) + "%s" % utbnamn
+    utbildningar = l.search_st("ou=groups, o=student.liu.se, o=liu.se",
+                               ldap.SCOPE_SUBTREE,
+                               filter,
+                               ['cn', 'description'])
+    for utb in utbildningar:
+        utbkod = utb[1]['cn'][0]
+        utbnamn = unicode(utb[1]['description'][0], 'utf8').encode('latin-1')
+        print "%s" % utbkod + " "*(25-len(utbkod)) + "%s" % utbnamn
+else:
+    print "Ej registrerad på någon utbildning"
 
 print
-print "Kurskoder:"
-print "=========="
-filter = '(|'
-for kurskod in data["coursecode"]:
-    filter+='(cn='+kurskod+')'
-filter+=')'
 
-kurser = l.search_st("ou=groups, o=student.liu.se, o=liu.se",
-                     ldap.SCOPE_SUBTREE,
-                     filter,
-                     ['cn', 'description'])
-for kurs in kurser:
-    kurskod = kurs[1]['cn'][0]
-    kursnamn = unicode(kurs[1]['description'][0], 'utf8').encode('latin-1')
-    print "%s" % kurskod + " "*(25-len(kurskod)) + "%s" % kursnamn
+if data.has_key("coursecode"):
+    print "Kurskoder:"
+    print "=========="
+    filter = '(|'
+    for kurskod in data["coursecode"]:
+        filter+='(cn='+kurskod+')'
+    filter+=')'
+
+    kurser = l.search_st("ou=groups, o=student.liu.se, o=liu.se",
+                         ldap.SCOPE_SUBTREE,
+                         filter,
+                         ['cn', 'description'])
+    for kurs in kurser:
+        kurskod = kurs[1]['cn'][0]
+        kursnamn = unicode(kurs[1]['description'][0], 'utf8').encode('latin-1')
+        print "%s" % kurskod + " "*(25-len(kurskod)) + "%s" % kursnamn
+else:
+    print "Ej registrerad på någon kurs"
 
 print
 try:
