@@ -1,3 +1,7 @@
+Sat May  2 20:50:10 1998  Peter Liljenberg  <petli@lysator.liu.se>
+
+	* heap.py: New file, heap class.
+
 Sat May  2 20:10:55  Kent Engström  <kent@lysator.liu.se>
 
 	* rt38.py: New file, coordinate conversions.
