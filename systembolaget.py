@@ -8,6 +8,7 @@ import re
 import cStringIO
 import urllib
 import getopt
+import md5
 
 try:
     from regexpmatcher import M, MS, MSDeH, MSet, MList, MLimit
@@ -114,6 +115,57 @@ def varu_url(prod_no):
     return "http://www.systembolaget.se/pris/owa/xdisplay?p_varunr=" + \
            prod_no
 
+# A helper class to make debugging easier and faster by caching
+# webpages and storing them if WEBPAGE_DEBUG is true.
+# This is only for debugging, as there is no code to handle GC
+# nor to check for out-of-data information.
+
+WEBPAGE_DEBUG = 0
+
+class WebCache:
+    def __init__(self):
+        pass
+
+    def filename(self, url):
+        return "SYSTEMBOLAGET_" + md5.md5(url).hexdigest()
+        
+    def cached(self, url):
+        if not WEBPAGE_DEBUG: return None
+        try:
+            f = open(self.filename(url))
+            print "WP CACHED", url
+            return f.read()
+        except IOError:
+            return None
+        
+    def cache(self, url, data):
+        if not WEBPAGE_DEBUG: return None
+        f = open(self.filename(url), "w")
+        f.write(data)
+        f.close()
+        print "WP NEW", url
+        
+    def get(self, url): 
+        cached = self.cached(url)
+        if cached:
+            return cached
+
+        u = urllib.urlopen(url)
+        data = u.read()
+        u.close()
+
+        self.cache(url, data)
+        return data
+       
+The_WebCache = WebCache()
+
+class WebPage:
+    def __init__(self, url):
+        self.url = url
+        
+    def get(self):
+        return The_WebCache.get(self.url)
+        
 # Classes matching a single piece of data
 
 class MSF(MS):
@@ -308,8 +360,7 @@ class Product:
 class ProductFromWeb(Product):
     def __init__(self, prodno):
         self.url = varu_url(str(prodno))
-        u = urllib.urlopen(self.url)
-        webpage = u.read()
+        webpage = WebPage(self.url).get()
         Product.__init__(self, webpage)
 
 
@@ -388,8 +439,7 @@ class SearchFromWeb(Search):
         else:
             soundex = "0"
         url = "http://www.systembolaget.se/pris/owa/zname?p_namn=%s&p_wwwgrptxt=%%25&p_rest=0&p_soundex=%s&p_ordinarie=%s" % (urllib.quote(key), soundex, ordinarie)
-        u = urllib.urlopen(url)
-        webpage = u.read()
+        webpage = WebPage(url).get()
         Search.__init__(self, webpage)
 
 
@@ -439,7 +489,7 @@ class ProductSearch:
                         ab = " alla"
                     else:
                         ab = ""
-                        fps.append("%11s (%s)%s" % (forp["pris"], forp["volym"], ab))
+                    fps.append("%11s (%s)%s" % (forp["pris"], forp["volym"], ab))
                 f.write("         %4s %-32s %s\n" % (vara.get("årgång",""),
                                                     vara["land"],
                                                     fps[0]))
@@ -514,8 +564,7 @@ class ProductSearchFromWeb(ProductSearch):
                p_nyhet,
                begr_butik, ordinarie)
 
-        u = urllib.urlopen(url)
-        webpage = u.read()
+        webpage = WebPage(url).get()
         ProductSearch.__init__(self, webpage)
 
 
@@ -591,8 +640,7 @@ class Stores:
 class StoresFromWeb(Stores):
     def __init__(self, prodno, lan, ort):
         url = "http://www.systembolaget.se/pris/owa/zvselect?p_artspec=&p_varunummer=%s&p_lan=%s&p_back=&p_rest=0" % (prodno, lan)
-        u = urllib.urlopen(url)
-        webpage = u.read()
+        webpage = WebPage(url).get()
         Stores.__init__(self, webpage,
                         single_lan = (lan <> "99"),
                         ort = ort)
@@ -705,6 +753,9 @@ def main():
                                         "ej-fat-karaktär",
     
                                         "bara-varunr",
+
+                                        # Hidden
+                                        "webpage-debug",
                                         ])
     
     for (opt, optarg) in options:
@@ -819,6 +870,9 @@ def main():
             p_fat_k = 2
         elif opt == "--bara-varunr":
             baravarunr = 1
+        elif opt == "--webpage-debug":
+            global WEBPAGE_DEBUG
+            WEBPAGE_DEBUG = 1
         else:
             sys.stderr.write("Internt fel (%s ej behandlad)" % opt)
             sys.exit(1)

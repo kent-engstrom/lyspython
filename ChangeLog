@@ -1,3 +1,10 @@
+2003-01-14  Kent Engstrom  <kent@astrea.hack.org>
+
+	* systembolaget.py: Add new classes WebCache and WebPage to enable
+	faster debugging by caching webpages to files. The function is activated
+	by the "hidden" --webpage-debug option.
+	(ProductSearch.to_string): Fix indent bug.
+
 2003-01-06  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.cgi: New program to produce wine lists in HTML.	
