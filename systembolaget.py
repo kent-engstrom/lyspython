@@ -91,23 +91,19 @@ def format_titled_fixed(title, text_lines, title_size = 16, max_col = 78):
         left = ""
     return string.join(res, "")
     
-def add_field(f, dict, title, key):
-    if dict.has_key(key):
-        f.write(format_titled(title, dict[key]))
-
-def add_field_new(f, title, data):
-    if data is not None:
+def add_field(f, title, data):
+    if data:
         f.write(format_titled(title, data))
 
-def add_to_list_from_dict(list, dict, key, fun = None):
-    if dict.has_key(key):
-        data = dict[key]
+def add_to_list(list, data, fun = None):
+    if data:
         if fun:
             data = fun(data)
         list.append(data)
 
-def add_to_list_new(list, data, fun = None):
-    if data is not None:
+def add_to_list_attribute(list, obj, attribute, fun = None):
+    if obj.__dict__.has_key(attribute):
+        data = obj.__dict__[attribute]
         if fun:
             data = fun(data)
         list.append(data)
@@ -122,8 +118,7 @@ def left_zero_pad(str, minsize):
     return ("0"*minsize + str)[-minsize:]
 
 def varu_url(prod_no):
-    return "http://www.systembolaget.se/pris/owa/xdisplay?p_varunr=" + \
-           prod_no
+    return "http://www.systembolaget.se/SokDrycker/Produkt?VaruNr=" + prod_no
 
 def klock_argument(s):
     # Parse number or range into min-max tuple
@@ -193,13 +188,18 @@ class WebPage:
         
 # Classes matching a single piece of data
 
-class MSF(MS):
+class MSFargDoftSmak(MSDeH):
     def elaborate_pattern(self, pattern):
-        return r"<B>%s</B></td>\n<td valign=top>(.*)</td></tr>" % pattern
+        return r'(?s)<b>%s</b>(.*?)<br>' % pattern
 
 class MSC(MS):
     def elaborate_pattern(self, pattern):
-        return r'<td width=70><center><img src="/bilder/klock_([0-9]+).gif" alt="[^"]*"><br> *%s *</center></td>' % pattern
+        return r'<img id="ProductDetail1_ImageProduct." src="/Images/([0-9]+).gif" alt="%s"' % pattern
+
+class MSF(MSDeH):
+    def elaborate_pattern(self, pattern):
+        return r'(?s)<td class="text10pxfet" .*?>%s</td>.*?<td.*?>(.*?)</td>' % pattern
+
 
 
 class MSVolym(MS):
@@ -223,41 +223,43 @@ class Product:
     def from_html_normal(self, webpage):
         assert self.state == NEW
 
-        self.grupp = MSDeH(r"<tr><td width=144> </td><td>\n(.+)\n").get(webpage)
-        self.namn = MS(r"<b>([^(]+)\(nr [^)]*\)").get(webpage)
-        self.varunr = MS(r"\(nr ([^)]*)\)").get(webpage)
-        self.ursprung = MSF("Ursprung").get(webpage)
-        self.producent = MSF("Producent").get(webpage)
+        m = MSet([("grupp", MSDeH(r'(?s)<td class=text10pxfetvit.*?>(.*?)</td>')),
+                  ("namn", MSDeH(r'<span class="rubrikstor">(.*?)\(nr')),
+                  ("varunr", MS(r'(?s)\(nr.*?([0-9]+)')),
+                  ("distrikt", MSDeH(r'<td class="text10px">(.*?)&nbsp;')),
+                  ("producent", MSDeH(r'\((.*?)\)')),
+                  ("land", MSDeH(r'<img id="ProductDetail1_ImageFlag".*?>&nbsp;(.*?)</td>')),
+                  ("farg", MSFargDoftSmak("Färg")),
+                  ("doft", MSFargDoftSmak("Doft")),
+                  ("smak", MSFargDoftSmak("Smak")),
+                  ("sotma", MSC("Sötma", advance = 0)),
+                  ("fyllighet", MSC("Fyllighet", advance = 0)),
+                  ("stravhet", MSC("Strävhet", advance = 0)),
+                  ("fruktsyra", MSC("Fruktsyra", advance = 0)),
+                  ("beska", MSC("Beska", advance = 0)),
+                  ("lagring", MSF("Lagring")),
+                  ("druvsorter", MSF("Druvsorter/råvaror")),
+                  ("alkoholhalt", MSF("Alkoholhalt")),
+                  ("argang", MSF("Provad årgång")),
+                  ("provningsdatum", MSF("Provningsdatum")),
+                  ("anvandning", MSDeH(r'<td class="text10px" width="174" bgColor="#ffffff" height="10">(.*?)</td>')),
+                  ])
 
-        if self.namn and self.varunr:
+        m.get_into_object(webpage, self)
+        #for k,v in self.__dict__.items(): print "%-16s = %s" % (k,v)
+        
+        if self.__dict__.has_key("namn") and self.__dict__.has_key("varunr"):
             self.state = VALID
         else:
             self.state = INVALID
             return self
         
         self.forpackningar = []
-        for f in MLimit(r'(?s)<td><table border="0" cellspacing="3">(.*?)</table></td></tr>', \
-                        MList("<tr>",
+        for f in MLimit(r'(?s)<th align="Left" bgcolor="#CCCCCC" width="90">Förpackning</th>(.*?)</table>', \
+                        MList("<tr",
                               M())).get(webpage):
             c = Container().from_html_normal(f)
             self.forpackningar.append(c)
-
-        self.farg = MSF("Färg").get(webpage)
-        self.doft = MSF("Doft").get(webpage)
-        self.smak = MSF("Smak").get(webpage)
-
-        self.sotma = MSC("Sötma", advance = 0).get(webpage)
-        self.fyllighet = MSC("Fyllighet", advance = 0).get(webpage)
-        self.stravhet = MSC("Strävhet", advance = 0).get(webpage)
-        self.fruktsyra = MSC("Fruktsyra", advance = 0).get(webpage)
-        self.beska = MSC("Beska", advance = 0).get(webpage)
-
-        self.anvandning = MSF("Användning").get(webpage)
-        self.hallbarhet = MSF("Hållbarhet").get(webpage)
-        self.druvsorter = MSF("Druvsorter/Råvaror").get(webpage)
-        self.argang = MSF("Provad årgång").get(webpage)
-        self.provningsdatum = MSF("Provningsdatum").get(webpage)
-        self.alkoholhalt = MS("<B>Alkoholhalt</B></td>\n<td valign=top>(.*)</td></tr>").get(webpage)
 
         return self
 
@@ -371,38 +373,39 @@ class Product:
 
     def to_string_normal(self, butiker=0):
         f = cStringIO.StringIO()
-        add_field_new(f, "Namn", self.namn)
-        add_field_new(f, "Nr", self.varunr)
-        add_field_new(f, "Grupp", self.grupp)
-        add_field_new(f, "Ursprung", self.ursprung)
-        add_field_new(f, "Producent", self.producent)
-        add_field_new(f, "Druvsorter", self.druvsorter)
+        add_field(f, "Namn", self.namn)
+        add_field(f, "Nr", self.varunr)
+        add_field(f, "Grupp", self.grupp)
+        add_field(f, "Distrikt", self.distrikt)
+        add_field(f, "Land", self.land)
+        add_field(f, "Producent", self.producent)
+        add_field(f, "Druvsorter", self.druvsorter)
         f.write("\n")
-        add_field_new(f, "Färg", self.farg)
-        add_field_new(f, "Doft", self.doft)
-        add_field_new(f, "Smak", self.smak)
+        add_field(f, "Färg", self.farg)
+        add_field(f, "Doft", self.doft)
+        add_field(f, "Smak", self.smak)
         f.write("\n")
-        add_field_new(f, "Sötma", self.sotma)
-        add_field_new(f, "Fyllighet", self.fyllighet)
-        add_field_new(f, "Strävhet", self.stravhet)
-        add_field_new(f, "Fruktsyra", self.fruktsyra)
-        add_field_new(f, "Beska", self.beska)
+        add_field(f, "Sötma", self.sotma)
+        add_field(f, "Fyllighet", self.fyllighet)
+        add_field(f, "Strävhet", self.stravhet)
+        add_field(f, "Fruktsyra", self.fruktsyra)
+        add_field(f, "Beska", self.beska)
         f.write("\n")
-        add_field_new(f, "Användning", self.anvandning)
-        add_field_new(f, "Hållbarhet", self.hallbarhet)
-        add_field_new(f, "Provad årgång", self.argang)
-        add_field_new(f, "Provad", self.provningsdatum)
-        add_field_new(f, "Alkoholhalt", self.alkoholhalt)
+        add_field(f, "Användning", self.anvandning)
+        add_field(f, "Lagring", self.lagring)
+        add_field(f, "Provad årgång", self.argang)
+        add_field(f, "Provad", self.provningsdatum)
+        add_field(f, "Alkoholhalt", self.alkoholhalt)
         f.write("\n")
 
         f_lines = []
         for c in self.forpackningar:
-            f_lines.append("%-18s %7s %7s %s %s" % (
+            f_lines.append("%-18s %10s %10s %s" % (
                 c.namn,
                 c.storlek,
                 c.pris,
-                c.anm1,
-                c.anm2))
+                c.anm,
+                ))
 
         f.write(format_titled_fixed("Förpackningar", f_lines))
         f.write("\n")
@@ -418,10 +421,11 @@ class Product:
         f.write("%s [%s]\n" %(move_year_to_front(self.namn),
                               self.varunr))
         lf = []
-        add_to_list_new(lf, self.ursprung)
-        add_to_list_new(lf, self.producent)
-        add_to_list_new(lf, self.argang)
-        add_to_list_new(lf, self.hallbarhet)
+        add_to_list(lf, self.land)
+        add_to_list(lf, self.distrikt)
+        add_to_list(lf, self.producent)
+        add_to_list(lf, self.argang)
+        add_to_list(lf, self.lagring)
         f.write("      %s\n" % string.join(lf, ", "))
         lf = []
         for (kod, varde) in [("Sö", self.sotma),
@@ -430,8 +434,9 @@ class Product:
                              ("Fr", self.fruktsyra),
                              ("Be", self.beska)]:
             kod = kod + ":"
-            add_to_list_new(lf, varde, lambda x, kod = kod: kod + x)
-        add_to_list_new(lf, self.alkoholhalt,
+            add_to_list(lf, varde, lambda x, kod = kod: kod + x)
+
+        add_to_list(lf, self.alkoholhalt,
                         lambda x: string.replace(x, " volymprocent", "%"))
             
         for c in self.forpackningar:
@@ -463,7 +468,7 @@ class Product:
                  self.varunr,
                  self.typical_price()))
 
-        f.write("<TR><TD>%s<BR>\n" % self.ursprung)
+        f.write("<TR><TD>%s, %s<BR>\n" % (self.land, self.distrikt))
         if self.druvsorter is not None:
             f.write("%s<BR>\n" % self.druvsorter)
         f.write("%s</TD>\n" % string.replace(self.alkoholhalt, "volymprocent", "%"))
@@ -531,21 +536,17 @@ class Container:
         # We use this instead of inline field = Mfoo(...).get(webfragment)
         # as we believe the matches below need to be sequenced
         # just the way MSet does.
-        dict = MSet([("namn", MS(r"<td><nobr>&#149; ([^<]+)</nobr></td>")),
-                     ("storlek", MS(r"<td align=right><nobr>([^<]+)</nobr></td>")),
-                     ("pris", MS(r"<nobr>([^<]+)</nobr>")),
-                     ("anm1", MSDeH(r"<td>(.*?)</td>")),
-                     ("anm2", MSDeH(r"<td>(.+?)</td>")),
-                     ]).get(webfragment)
         
-        self.namn = dict.get("namn")
-        self.storlek = dict.get("storlek")
-        self.pris = dict.get("pris")
-        self.anm1 = dict.get("anm1", "") 
-        self.anm2 = dict.get("anm2", "")
-        self.sortiment = "?" # Does not know
+        MSet([("namn", MS(r'<td bgcolor="#FFFFFF" width="90">(.*?)</td>')),
+              ("storlek", MS(r'<td align="Right" bgcolor="#FFFFFF" width="60">(.*?)</td>')),
+              ("pris", MS(r'<td class="text10pxfet" align="Right" bgcolor="#FFFFFF" width="77">([0-9.]+)</td>')),
+              ("anm", MSDeH(r'<td align="Center" bgcolor="#FFFFFF">(.*?)</td>')),
+              ]).get_into_object(webfragment,self)
+        
+        self.sortiment = "?"
         
         assert self.namn and self.storlek and self.pris
+        self.pris = self.pris + " kr"
         self.state = VALID
 
         return self
