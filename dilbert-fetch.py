@@ -54,6 +54,7 @@ for date in dates:
 
     picurl="http://"+server2+"/comics/dilbert/archive/images/dilbert%s.gif"%(rnd)
 
+    print "%s: fetching..."%filename
     f=urllib.urlopen(picurl)
     picture=f.read()
     f.close()
