@@ -531,9 +531,9 @@ class Container:
         # We use this instead of inline field = Mfoo(...).get(webfragment)
         # as we believe the matches below need to be sequenced
         # just the way MSet does.
-        dict = MSet([("namn", MS(r"<td>&#149; ([^<]+)</td>")),
-                     ("storlek", MS(r"<td align=right>([^<]+)</td>")),
-                     ("pris", MS(r"<td align=right>([^<]+)</td>")),
+        dict = MSet([("namn", MS(r"<td><nobr>&#149; ([^<]+)</nobr></td>")),
+                     ("storlek", MS(r"<td align=right><nobr>([^<]+)</nobr></td>")),
+                     ("pris", MS(r"<nobr>([^<]+)</nobr>")),
                      ("anm1", MSDeH(r"<td>(.*?)</td>")),
                      ("anm2", MSDeH(r"<td>(.+?)</td>")),
                      ]).get(webfragment)

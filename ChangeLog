@@ -1,3 +1,11 @@
+2003-10-28  Kent Engstrom  <kent@athena.hack.org>
+
+	* systembolaget.py (Container.from_html_normal): Adapt to the
+	inclusion of <nobr> in the container fields.
+
+2003-10-28  Kent Engström  <kent@lysator.liu.se>
+
+
 2003-08-25  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py (Product.typical_price): Don't fail when
