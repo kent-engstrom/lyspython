@@ -1,8 +1,9 @@
 2003-05-21  Pontus Sköld  <pont@soua.net>
 
 	* telkat.py: Updated to reflect Eniros recent changes.
-	(telkatParser): dito. 
+	(telkatParser): dito.
 	(telkatInfo): Handle new input from telkatParser.
+	(telkatInfo.__init__): Remove any extra Tel. from phone number.
 
 	(NumberLookup): No need to divide number anymore.
 	riktnr.txt is no longer neccessary.
