@@ -1,3 +1,7 @@
+2004-10-15  Kent Engström  <kent@unit.liu.se>
+
+	* systembolaget.py: Adapted to changes to the site.
+
 2004-05-13  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py (Product.to_string_html): Do not show

@@ -187,7 +187,7 @@ class MSFargDoftSmak(MSDeH):
 
 class MSC(MS):
     def elaborate_pattern(self, pattern):
-        return r'<img id="ProductDetail1_ImageProduct." src="/Images/([0-9]+).gif" alt="%s"' % pattern
+        return r'<img id="ProductDetail1_ImageProduct." src="/Images/([0-9]+).gif" alt="%s.*"' % pattern
 
 class MSF(MSDeH):
     def elaborate_pattern(self, pattern):
@@ -240,7 +240,8 @@ class Product:
 
         m.get_into_object(webpage, self)
         #for k,v in self.__dict__.items(): print "%-16s = %s" % (k,v)
-        
+
+        self.namn = self.namn.strip()
         if self.namn and self.varunr:
             self.state = VALID
         else:
