@@ -1,3 +1,7 @@
+2001-11-05  Kent Engström  <kent@ceres.unit.liu.se>
+
+	* systembolaget.py: Add --html option.
+
 2001-09-03  Kent Engström  <kent@ceres.unit.liu.se>
 
 	* dilbert-fetch.py: Totally new version. Requires Python 1.6.

@@ -262,7 +262,39 @@ class Product:
 
     def valid(self):
         return self.dict.has_key("namn")
-    
+
+    def typical_price(self):
+        # Typical price, suitable for HTML display
+        # Choose price for 700 or 750 ml if present, else first price.
+        vald = None
+        normala = ["750 ml", "700 ml"]
+        for f_dict in self.dict["förpackningar"]:
+            if vald is None or f_dict.get("storlek")in normala:
+                vald = f_dict
+
+        pris = string.replace(string.replace(string.replace(vald["pris"],
+                                                            ".", ":"),
+                                             ":00", ":-"),
+                              " kr", "")
+        
+        if vald["storlek"] in normala:
+            return pris
+        else:
+            storlek = string.replace(vald["storlek"], "0 ml", " cl")
+            return pris + " / " + storlek
+
+    def clock_table(self):
+        f = cStringIO.StringIO()
+        f.write("<TABLE><TR>\n")
+        for egenskap in ["sötma","fyllighet", "strävhet",
+                         "fruktsyra", "beska"]:
+            if self.dict.has_key(egenskap):
+                f.write("<TD><CENTER><IMG SRC=klock_%s.gif><BR>%s&nbsp;</CENTER></TD>\n" % (
+                    self.dict[egenskap],
+                    string.capitalize(egenskap)))
+        f.write("</TR></TABLE>\n")
+        return f.getvalue()
+            
     def to_string(self):
         f = cStringIO.StringIO()
         add_field(f, self.dict, "Namn","namn")
@@ -326,6 +358,30 @@ class Product:
                                  f_dict.get("storlek")))
         f.write("      %s\n" % string.join(lf, ", "))
         return f.getvalue()
+
+    def to_string_html(self):
+        f = cStringIO.StringIO()
+        f.write("<TR><TD COLSPAN=2><B>%s (nr %s) %s</B></TD></TR>\n" % \
+                (self.dict["namn"],
+                 self.dict["varunr"],
+                 self.typical_price()))
+
+        f.write("<TR><TD>%s<BR>\n" % self.dict["ursprung"])
+        f.write("%s</TD>\n" % string.replace(self.dict["alkoholhalt"], "volymprocent", "%"))
+
+        f.write("<TD>%s</TD></TR>\n" % self.clock_table())
+
+        f.write("<TR><TD COLSPAN=2><UL>\n")
+        for rubrik in ["färg","doft","smak"]:
+            if self.dict.has_key(rubrik):
+                f.write("<LI>%s" % (self.dict[rubrik]))
+        f.write("</UL></TD></TR>\n")
+        
+        f.write("<TR><TD COLSPAN=2>&nbsp;</TD></TR>\n")
+
+
+        return f.getvalue()
+            
 
 class ProductFromWeb(Product):
     def __init__(self, prodno):
@@ -541,6 +597,21 @@ class StoresFromWeb(Stores):
                         single_lan = (lan <> "99"),
                         ort = ort)
 
+# HTML-lista
+
+def do_html(nr_lista):
+    print "<BODY BGCOLOR=white>"
+    print "<TABLE>"
+    for varunr in nr_lista:
+        prod = ProductFromWeb(varunr)
+        if prod.valid():
+            print prod.to_string_html()
+        else:
+            print "<TR><TD COLSPAN=2>Varunr %s saknas.</TD></TR>\n" % varunr
+    print "</TABLE>"
+    print "</BODY>"
+        
+
 # MAIN
 
 # Option handling
@@ -561,12 +632,15 @@ F_HELP = 0
 F_NAMN = 1
 F_PRODUKT = 2
 F_VARA = 3
+F_HTML = 4
+
 funktion = F_HELP
 
 options, arguments = getopt.getopt(sys.argv[1:],
                                    "",
                                    ["debug",
                                     "namn=",
+                                    "html=",
                                     "beställningssortimentet",
                                     "soundex",
                                     "kort",
@@ -592,6 +666,9 @@ for (opt, optarg) in options:
     elif opt == "--namn":
         funktion = F_NAMN
         namn = optarg
+    elif opt == "--html":
+        funktion = F_HTML
+        nr_lista = optarg
     elif opt == "--beställningssortimentet":
         best = 1
     elif opt == "--soundex":
@@ -668,6 +745,10 @@ if funktion == F_VARA:
             else:
                 print "Inga butiker med vara %s funna." % varunr
             
+elif funktion == F_HTML:
+    # HTML-lista
+    do_html(string.split(nr_lista,","))
+           
 elif funktion == F_NAMN:
     # Namnsökning
         s = SearchFromWeb(namn, best, soundex)
@@ -697,6 +778,10 @@ else: # F_HELP
    %s [--län=LÄN] [--ort=ORT]
    %s VARUNR...
 """ % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*2)
+    print "Varuvisning i HTML-format:"
+    print """
+   %s --html VARUNR,VARUNR,...
+""" % ((sys.argv[0],))
     print "Namnsökning:"
     print """
    %s [--beställningssortimentet] [--soundex]
