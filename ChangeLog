@@ -1,3 +1,8 @@
+2002-05-01  Kent Engström  <kent@lysator.liu.se>
+
+	* systembolaget.py: Add "alla" on search result pages for articles
+	on stock in all stores.
+
 2002-04-30  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py: Adapt to more format changes on the

@@ -129,6 +129,14 @@ class MSVolym(MS):
         return re.sub("ml", " ml",
                       string.join(string.split(string.strip(data)), " "))
 
+# Blåfärgade artiklar finns i alla butiker
+class MSAllaB(MS):
+    def clean(self, data):
+        if data == "0000FF":
+            return "Ja"
+        else:
+            return "Nej"
+
 
 # Product class
 
@@ -317,7 +325,8 @@ search_m = MSet([("typlista",
                                            ("förplista",
                                             MList(r'<font face="Arial, Helvetica, sans-serif" size="2">[0-9]+ml</font>',
                                                   MSet([("volym", MSVolym(r'<font [^>]*?>(.*?)</font>')),
-                                                        ("pris", MS(r'<font [^>]*?>(.*?)</font>')),
+                                                        ("allabutiker", MSAllaB(r'<font [^>]*?color="#([0-9A-Fa-f]+)">')),
+                                                        ("pris", MS(r'([0-9.]+ kr)')),
                                                         ]))),
                                            ]))),
                               ]))),
@@ -340,7 +349,13 @@ class Search:
                                        vara["namn"]))
                 fps = []
                 for forp in vara["förplista"]:
-                    fps.append("%11s (%s)" % (forp["pris"], forp["volym"]))
+                    if forp["allabutiker"] == "Ja":
+                        ab = " alla"
+                    else:
+                        ab = ""
+                    fps.append("%11s (%s)%s" % (forp["pris"],
+                                                  forp["volym"],
+                                                  ab))
                 #fps_txt = string.join(fps, ", ")
                 f.write("         %4s %-32s %s\n" % (vara["årgång"],
                                                vara["land"],
@@ -382,7 +397,8 @@ p_search_m = MSet([("rubrik", MSDeH(r'(?s)<td><font face="TimesNewRoman, Arial, 
                                 ("förplista",
                                  MList(r'<font face="Arial, Helvetica, sans-serif" size="2">[0-9]+ml</font>',
                                        MSet([("volym", MSVolym(r'<font [^>]*?>(.*?)</font>')),
-                                             ("pris", MS(r'<font [^>]*?>(.*?)</font>')),
+                                             ("allabutiker", MSAllaB(r'<font [^>]*?color="#([0-9A-Fa-f]+)">')),
+                                             ("pris", MS(r'([0-9.]+ kr)')),
                                            ]))),
                                 ]))),
                    ("antal", MS(r"Din sökning gav ([0-9]+) träffar.")),
@@ -405,7 +421,11 @@ class ProductSearch:
                                    vara["namn"]))
             fps = []
             for forp in vara["förplista"]:
-                fps.append("%11s (%s)" % (forp["pris"], forp["volym"]))
+                if forp["allabutiker"] == "Ja":
+                    ab = " alla"
+                else:
+                    ab = ""
+                fps.append("%11s (%s)%s" % (forp["pris"], forp["volym"], ab))
             f.write("         %4s %-32s %s\n" % (vara.get("årgång",""),
                                                  vara["land"],
                                                  fps[0]))
