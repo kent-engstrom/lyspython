@@ -1,3 +1,8 @@
+2002-04-17  Kent Engström  <kent@lysatorliu.se>
+
+	* systembolaget.py: Change the regular expressions a bit to
+	compensate for newlines that are no longer part of the web pages.
+
 2002-03-03  Kent Engstrom  <kent@lysator.liu.se>
 
 	* eniro.py: New file for command-line searching of
