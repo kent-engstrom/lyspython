@@ -416,7 +416,10 @@ class ProductSearchFromWeb(ProductSearch):
                  ursprung = None,
                  min_pris = 0, max_pris = 1000000,
                  best = 0,
-                 begr_butik = None):
+                 begr_butik = None,
+                 p_type = None,
+                 p_prop = None,
+                 p_ursprung = None):
         if best:
             ordinarie = "0"
         else:
@@ -425,9 +428,22 @@ class ProductSearchFromWeb(ProductSearch):
         if begr_butik is None:
             begr_butik = ""
 
+        if p_type is None:
+            p_type = "0"
+
+        if p_prop is None:
+            p_prop = "0"
+
+        if p_ursprung is None:
+            p_ursprung = ""
+        else:
+            p_ursprung = urllib.quote(string.replace(p_ursprung," ","+"))
         grupp = urllib.quote(grupp)
-        url = "http://www.systembolaget.se/pris/owa/xasearch?p_wwwgrp=%s&p_varutyp=&p_ursprung=&p_prismin=%s&p_prismax=%s&p_type=0&p_prop=0&p_butnr=%s&p_ordinarie=%s&p_rest=0&p_back=" % \
-              (grupp, min_pris, max_pris, begr_butik, ordinarie)
+        url = "http://www.systembolaget.se/pris/owa/xasearch?p_wwwgrp=%s&p_varutyp=&p_ursprung=%s&p_prismin=%s&p_prismax=%s&p_type=%s&p_prop=%s&p_butnr=%s&p_ordinarie=%s&p_rest=0&p_back=" % \
+              (grupp, p_ursprung,
+               min_pris, max_pris,
+               p_type, p_prop,
+               begr_butik, ordinarie)
 
         u = urllib.urlopen(url)
         webpage = u.read()
@@ -542,6 +558,9 @@ min_pris = 0
 max_pris = 1000000
 begr_butik = None
 grupp = None
+p_type = None
+p_prop = None
+p_ursprung = None
 
 F_HELP = 0
 F_NAMN = 1
@@ -574,6 +593,14 @@ options, arguments = getopt.getopt(sys.argv[1:],
                                     "min-pris=",
                                     "max-pris=",
                                     "begränsa-butik=",
+                                    "små-flaskor",
+                                    "stora-flaskor",
+                                    "bag-in-box",
+                                    "papp-förpackning",
+                                    "kosher",
+                                    "ekologiskt-odlat",
+                                    "nyheter",
+                                    "ursprung=",
                                     ])
 
 for (opt, optarg) in options:
@@ -636,6 +663,22 @@ for (opt, optarg) in options:
         max_pris = optarg
     elif opt == "--begränsa-butik":
         begr_butik = optarg
+    elif opt == "--små-flaskor":
+        p_type="1"
+    elif opt == "--stora-flaskor":
+        p_type="2"
+    elif opt == "--bag-in-box":
+        p_type="3"
+    elif opt == "--papp-förpackning":
+        p_type="4"
+    elif opt == "--kosher":
+        p_prop="3"
+    elif opt == "--ekologiskt-odlat":
+        p_prop="2"
+    elif opt == "--nyheter":
+        p_prop="4"
+    elif opt == "--ursprung":
+        p_ursprung = optarg
     else:
         sys.stderr.write("Internt fel (%s ej behandlad)" % opt)
         sys.exit(1)
@@ -683,7 +726,10 @@ elif funktion == F_PRODUKT:
                                  min_pris = min_pris,
                                  max_pris = max_pris,
                                  best = best,
-                                 begr_butik = begr_butik)
+                                 begr_butik = begr_butik,
+                                 p_type = p_type,
+                                 p_prop = p_prop,
+                                 p_ursprung = p_ursprung)
         if s.valid():
             print s.to_string(),
         else:
@@ -715,7 +761,11 @@ else: # F_HELP
    %s   --sprit        | --öl-och-cider |
    %s   --blanddrycker | --lättdrycker }
    %s [--min-pris=MIN] [--max-pris=MAX]
+   %s [{--små-flaskor  | --stora-flaskor |
+   %s   --bag-in-box   | --papp-förpackning}]
+   %s [{--kosher | --ekologiskt-odlat | --nyheter}
+   %s [--ursprung=LAND/REGION]
    %s [--begränsa-butik=BUTIKSKOD]
-""" % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*5)
+""" % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*9)
     
     

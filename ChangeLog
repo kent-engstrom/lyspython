@@ -1,6 +1,9 @@
 2002-01-31  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py: Add hyperlinks and data source to HTML page.
+	Add options for container (small, large, bag-in-box, carton),
+	type (kosher, ecological, new) and origin.
+	
 
 2002-01-29  Erik Forsberg  <forsberg@lysator.liu.se>
 	* lookupstudent.py: New file with code for looking up info about a
