@@ -1,3 +1,8 @@
+2002-09-25  Erik Forsberg  <forsberg@lysator.liu.se
+
+	* fields.py: Added new field type "OnetimeField", useful for 
+	letting users add a value one time, but then making it uneditable.
+
 2002-09-05  Kent Engstrom  <kent@lysator.liu.se>
 
 	* systembolaget.py: Adapt to format changes and new featues on the

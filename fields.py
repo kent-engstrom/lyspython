@@ -223,6 +223,7 @@ class Field:
         # Convert data from internal to SQL form. Override!
         raise FieldVirtualError
 
+
 class TextField(Field):
     def __init__(self, name, **options):
         Field.__init__(self, name) 
@@ -272,8 +273,13 @@ class HTMLField(TextField):
     def convert_to_tag(self):
         return self._value
             
-            
-    
+class OnetimeField(TextField):
+    def convert_to_tag(self):
+        if self._options.get("no_input", 0):
+            return TextField.convert_to_tag(self)
+        else:
+            return "<input type=\"text\" length=\"16\" name=\"%s\" value=\"%s\">" % (self._name, TextField.convert_to_tag(self))
+        
 class IntField(Field):
     def __init__(self, name, **options):
         Field.__init__(self, name)
@@ -505,6 +511,19 @@ class ChoiceField(Field):
 
     def convert_to_sql(self):
         return "'"+db.escape(str(self._value))+"'"
+
+class RadioButtons(ChoiceField):
+    def generate_option(self, tag, text, selected):
+	if selected:
+	    seltxt = " checked"
+	else:
+	    seltxt = ""
+	return "<input type=\"radio\" name=\"%s\" value=\"%s\"  %s>"\
+	       "%s</input>" % (cgi.escape(self._name),
+			       cgi.escape(tag), 
+			       seltxt,
+			       cgi.escape(text))
+
 
 
 # This derived class uses checkboxes to "simulate" a multiple select
