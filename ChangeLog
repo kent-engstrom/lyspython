@@ -1,3 +1,11 @@
+2002-10-22  Erik Forsberg <forsberg@lysator.liu.se>
+
+	* fm2mail.py: Initial version:
+	- Import news from freshmeat.org to an email address, for 
+	  example to LysKOM.
+	- Import two versions. One "corned" version, where a software is 
+	  only advertised once in a certain time period.
+
 2002-10-21  Kent Engstrom  <kent@astrea.hack.org>
 
 	* systembolaget.py: Adapt to format changes on the site:
