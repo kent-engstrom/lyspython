@@ -14,6 +14,7 @@
 
 import regex
 import string
+import time
 
 import jddate
 
@@ -99,6 +100,11 @@ def FromJD(jd):
 def FromYMD(y, m, d):
     newtime = Time()
     newtime.SetYMD(y, m, d)
+    return newtime
+
+def FromYMDHMS(y, mo, d, h, mi, s):
+    newtime = Time()
+    newtime.SetYMDHMS(y, mo, d, h, mi, s)
     return newtime
 
 def FromYWD(y, w, d):
