@@ -1,3 +1,7 @@
+Sat May  2 20:10:55  Kent Engström  <kent@lysator.liu.se>
+
+	* rt38.py: New file, coordinate conversions.
+
 Sat May  2 19:19:23  Kent Engström  <kent@lysator.liu.se>
 
 	* checksum.py: New file, checksum calculations.
