@@ -2,6 +2,7 @@
 
 	* systembolaget.py: Adapt to format changes on the
 	Systembolaget site. Patch provided by Pontus Sköld.
+	Additional patch by me for the "clocks".
 
 2002-06-07  Erik Forsberg  <forsberg@lysator.liu.se>
 	* lookupstudent.py: Fix bug that made usernames look ugly if they

@@ -121,7 +121,7 @@ class MSF(MS):
 
 class MSC(MS):
     def elaborate_pattern(self, pattern):
-        return r'<td width=70><center><img src="/bilder/klock_([0-9]+).gif"><br> *%s *</center></td>' % pattern
+        return r'<td width=70><center><img src="/bilder/klock_([0-9]+).gif" alt="[^"]*"><br> *%s *</center></td>' % pattern
 
 
 class MSVolym(MS):
