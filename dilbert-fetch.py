@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/local/pkg/python1.5/bin/python
 
 import urllib,socket,sys,regex,os
 
@@ -10,6 +10,7 @@ indexurl="http://"+server+"/comics/dilbert/archive/"
 
 # Connect and get archive index page
 
+print "- fetching main page"
 f=urllib.urlopen(indexurl)
 index=f.read()
 f.close()
