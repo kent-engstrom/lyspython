@@ -1,3 +1,8 @@
+2002-11-12  Kent Engström  <kent@lysator.liu.se>
+
+	* systembolaget.py: Adapt to format changes on the site:
+	- Cope with hyperlinks in the product group name.
+
 2002-10-22  Erik Forsberg <forsberg@lysator.liu.se>
 
 	* fm2mail.py: Initial version:

@@ -141,7 +141,7 @@ class MSAllaB(MS):
 
 # Product class
 
-prod_m = MSet([("grupp", MS(r"<tr><td width=144> </td><td>\n(.+)\n")),
+prod_m = MSet([("grupp", MSDeH(r"<tr><td width=144> </td><td>\n(.+)\n")),
                ("namn", MS(r"<b>([^(]+)\(nr [^)]*\)")),
                ("varunr", MS(r"\(nr ([^)]*)\)")),
                ("ursprung",MSF("Ursprung")),
@@ -387,7 +387,7 @@ class SearchFromWeb(Search):
 
 # ProductSearch class
 
-p_search_m = MSet([("rubrik", MSDeH(r'(?s)<font face="TimesNewRoman, Arial, Helvetica, sans-serif" size="5"><b>([A-ZÅÄÖ].*?)</b>')),
+p_search_m = MSet([("rubrik", MSDeH(r'(?s)<font face="TimesNewRoman, Arial, Helvetica, sans-serif" size="5"><b>([<A-ZÅÄÖ].*?)</b>')),
                    ("prodlista",
                     MList(r'<A HREF="xdisplay',
                           MSet([("varunr", MS(r'p_varunr=([0-9]+)')),
