@@ -471,7 +471,7 @@ class Product:
         if include_sensory:
             f.write("<TR><TD COLSPAN=2><UL>\n")
             for varde in [self.farg, self.doft, self.smak]:
-                if varde is not None:
+                if varde is not None and varde <> "":
                     f.write("<LI>%s" % (varde))
             f.write("</UL></TD></TR>\n")
         
