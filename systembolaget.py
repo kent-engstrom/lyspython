@@ -121,7 +121,7 @@ class MSF(MS):
 
 class MSC(MS):
     def elaborate_pattern(self, pattern):
-        return r'<td width=70><center><img src="/bilder/klock_([0-9]+).gif"\n><br> *%s *</center></td>' % pattern
+        return r'<td width=70><center><img src="/bilder/klock_([0-9]+).gif"><br> *%s *</center></td>' % pattern
 
 
 class MSVolym(MS):
@@ -158,7 +158,7 @@ prod_m = MSet([("grupp", MS(r"<tr><td width=144> </td><td>\n(.+)\n")),
                ("hållbarhet",MSF("Hållbarhet")),
                ("provad_årgång",MSF("Provad årgång")),
                ("provningsdatum",MSF("Provningsdatum")),
-               ("alkoholhalt",MS("<B>Alkoholhalt</B></td>\n<td valign=top>(.*\n.*)</td></tr>")),
+               ("alkoholhalt",MS("<B>Alkoholhalt</B></td>\n<td valign=top>(.*)</td></tr>")),
                ])    
 
 class Product:
