@@ -1,3 +1,9 @@
+2000-11-21  Kent Engstrom  <kent@lysator.liu.se>
+
+	* checksum.py (calculate_pnralg_checksum): Fixed bug that
+	  made "personnummer" check digit 0 become ":", thus also
+	  flagging all "personnummer" with check digit 0 as invalid.
+
 2000-06-16  Per Cederqvist  <ceder@lysator.liu.se>
 
 	* fdselect.py: New file.  This is work in progress.
