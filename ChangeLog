@@ -2,6 +2,10 @@
 
 	* systembolaget.py: Add hyperlinks and data source to HTML page.
 
+2002-01-29  Erik Forsberg  <forsberg@lysator.liu.se>
+	* lookupstudent.py: New file with code for looking up info about a
+	student in the LDAP directory at ldap.student.liu.se.
+
 2001-12-18  Kent Engström  <kent@lysator.liu.se>
 
 	* regexpmatcher.py: New file containing classes that used to be in
