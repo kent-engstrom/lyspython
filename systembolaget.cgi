@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: Latin-1 -*-
 # (C) 2003 Kent Engström. Released under the GNU GPL.
 
@@ -106,7 +106,7 @@ När rätt varor visas: välj <b>Skapa</b> för att skapa lista för utskrift.
             elif self.nynr[i] != self.nr[i]:
                 # The user has changed the form. Do a search and display new data
                 nr = self.nynr[i]
-                vara = systembolaget.ProductFromWeb(nr)
+                vara = systembolaget.Product().search(nr)
                 if vara.valid():
                     beskr = "<TABLE>" + escq(vara.to_string_html(include_sensory=0)) + "</TABLE>"
                 else:
@@ -158,7 +158,7 @@ När rätt varor visas: välj <b>Skapa</b> för att skapa lista för utskrift.
 <TABLE>""")
 
         for i in range(0, self.ant):
-            vara = systembolaget.ProductFromWeb(self.nr[i])
+            vara = systembolaget.Product().search(self.nr[i])
             if vara.valid():
                 w(vara.to_string_html())
         w("""
