@@ -207,14 +207,6 @@ class MSVolym(MS):
         # Things to clean up: spaces around the data
         # No space, or more than one space between digits and "ml"
         return string.join(string.split(string.strip(string.replace(data, "ml", " ml"))), " ")
-# Blåfärgade artiklar finns i alla butiker
-class MSAllaB(MS):
-    def clean(self, data):
-        if data == "0000FF":
-            return "Ja"
-        else:
-            return "Nej"
-
 
 # Object validity
 
@@ -270,58 +262,47 @@ class Product:
         return self
 
     # Parse the product information in a name or group search result.
-    # We use separate regexps for the two cases in the specific
-    # methods below; this functions should not be called directly.
-    def from_html_productlist_common(self, webfragment, grupp, matcher):
+    # We used to have separate regexps for the two cases in the specific
+    # methods below; this function should not be called directly.
+    def from_html_productlist_common(self, webfragment, grupp, best = 0):
         assert self.state == NEW
 
-        dict = matcher.get(webfragment)
-        
+        m = MSet([("varunr", MS(r'p_varunr=([0-9]+)')),
+                  ("namn", MS(r'(?s)>(.*?)</a>')),
+                  ("årgång", MSDeH(r'(?s)<td.*?>(.*?)</td>')),
+                  ("varunr2", MSDeH(r'(?s)<td.*?>(.*?)</td>')),
+                  ("land", MSDeH(r'(?s)<td.*?>(.*?)</td>')),
+                  ("förpdata", M()),
+                  ])
+
+        dict = m.get(webfragment)
         self.grupp = grupp
         self.varunr = dict.get("varunr")
         self.namn = dict.get("namn")
         self.ursprung = dict.get("land")
-        self.argang = dict.get("årgång")
+        self.argang = dict.get("årgång","")
         
+        # Earlier, we split on products and extracted a whole list of containers
+        # from the product entry. Now, we are forced to parse each container as a separate
+        # product, and merge them in the ProductList class.
+        self.forpackningar = []
+        fd = dict["förpdata"]
+        c = Container().from_html_productlist(fd, best)
+        self.forpackningar.append(c)
+
         if self.namn and self.varunr:
             self.state = VALID
         else:
             self.state = INVALID
-            return self
-
-        self.forpackningar = []
-        for f in dict["förplista"]:
-            c = Container().from_html_productlist(f)
-            self.forpackningar.append(c)
 
         return self
 
     # Parse the product information in a name search result
-    def from_html_name(self, webfragment, grupp):
-        m = MSet([("varunr", MS(r'p_varunr=([0-9]+)')),
-                  ("namn", MS('<B>(.*?)</B>')),
-                  ("årgång", MSDeH(r'<font [^>]*?>(.*?)</font>')),
-                  ("varunr2", MS(r'<font [^>]*?>(.*?)</font>')),
-                  ("land", MS(r'<font [^>]*?>(.*?)</font>')),
-                  ("förplista",
-                   MList(r'<font face="Arial, Helvetica, sans-serif" size="2">[0-9]+ml</font>',
-                         M())),
-                  ])
-        return self.from_html_productlist_common(webfragment, grupp, m)
+    from_html_name = from_html_productlist_common
         
 
     # Parse the product information in a group search result
-    def from_html_group(self, webfragment, grupp):
-        m = MSet([("varunr", MS(r'p_varunr=([0-9]+)')),
-                  ("namn", MS('<B>(.*?)</B>')),
-                  ("årgång", MSDeH(r'<font [^>]*?>([0-9]+|&nbsp;)<')),
-                  ("varunr2", MS(r'<font [^>]*?>([0-9]+)<')),
-                  ("land", MS(r'<font [^>]*?>(.*?)</font>')),
-                  ("förplista",
-                   MList(r'<font face="Arial, Helvetica, sans-serif" size="2">[0-9]+ ml',
-                         M())),
-                  ])
-        return self.from_html_productlist_common(webfragment, grupp, m)
+    from_html_group = from_html_productlist_common
 
     # Parse the stores list for a product
     def from_html_stores(self, webpage, lan, ort):
@@ -523,12 +504,16 @@ class Product:
 
         # Stores
         if butiker:
-            url = "http://www.systembolaget.se/pris/owa/zvselect?p_artspec=&p_varunummer=%s&p_lan=%s&p_back=&p_rest=0" % (prodno, lan)
+            url = "http://www.systembolaget.se/pris/owa/zvselect?p_artspec=&p_varunummer=%s&p_lan=%s&p_back=" % (prodno, lan)
             webpage = WebPage(url).get()
             self.from_html_stores(webpage, lan, ort)
             
         # The final touch
         return self
+
+    def add_containers_from(self, other):
+        assert len(other.forpackningar) > 0
+        self.forpackningar.extend(other.forpackningar)
 
 # Container class
 
@@ -555,7 +540,7 @@ class Container:
         self.pris = dict.get("pris")
         self.anm1 = dict.get("anm1", "") 
         self.anm2 = dict.get("anm2", "")
-        self.allabutiker = None # Does not know
+        self.sortiment = "?" # Does not know
         
         assert self.namn and self.storlek and self.pris
         self.state = VALID
@@ -563,19 +548,25 @@ class Container:
         return self
 
     # Parse the container information in a name or group search result
-    def from_html_productlist(self, webfragment):
+    def from_html_productlist(self, webfragment, best = 0):
         assert self.state == NEW
 
-        dict = MSet([("volym", MSVolym(r'<font [^>]*?>(.*?)<')),
-                     ("allabutiker", MSAllaB(r'<font [^>]*?color="#([0-9A-Fa-f]+)">')),
-                     ("pris", MS(r'([0-9.]+ kr)')),
+        dict = MSet([("volym", MSVolym(r'(?s)<td.*?>(.*?)</td>')),
+                     ("pris", MS(r'(?s)<td.*?>(.*?)</td>')),
+                     ("allabutiker", MS(r'(Finns i alla butiker)')),
+                     ("bestsort", MS(r'(Beställningsvara)')),
                      ]).get(webfragment)
         self.namn = None
         self.storlek = dict.get("volym")
         self.pris = dict.get("pris")
         self.anm1 = None
         self.anm2 = None
-        self.allabutiker = dict.get("allabutiker")
+        if dict.has_key("allabutiker"):
+            self.sortiment = "alla"
+        elif best or dict.has_key("bestsort"):
+            self.sortiment = "best"
+        else:
+            self.sortiment = ""
 
         assert self.storlek and self.pris
         self.state = VALID
@@ -583,12 +574,7 @@ class Container:
         return self
 
     def to_string_productlist(self):
-        if self.allabutiker == "Ja":
-            ab = " alla"
-        else:
-            ab = ""
-
-        return "%11s (%s)%s" % (self.pris, self.storlek, ab)
+        return "%11s (%s) %s" % (self.pris, self.storlek, self.sortiment)
 
     def valid(self):
         return self.state == VALID
@@ -603,7 +589,7 @@ class Store:
     def from_html(self, webfragment, lan = None):
         assert self.state == NEW
 
-        dict = MSet([("kod", MS(r'thebut=([0-9]+)')),
+        dict = MSet([("kod", MS(r'butiknr=([0-9]+)')),
                      ("ort", MS(r'>(.*?)</a>')),
                      ("adress", MS(r'<td[^>]*>(.*?)</td>')),
                      ("telefon", MS(r'<td[^>]*>(.*?)</td>')),
@@ -645,23 +631,29 @@ class ProductList:
         self.state = NEW
         
     # Parse the result of a name search 
-    def from_html_name(self, webpage, ordinarie):
+    def from_html_name(self, webpage):
         assert self.state == NEW
         
-        typlista = MList(r'<font face="TimesNewRoman, Arial, Helvetica, sans-serif" size="5">',
-                         MSet([("typrubrik", MSDeH(r'<b>(.*?) *</b>')),
+        typlista = MList(r'<table width="640" border="0" cellspacing="0" cellpadding="0">',
+                         MSet([("typrubrik", MSDeH(r'(?s)<font class="rubrik2">(.*?)</font>')),
                                ("prodlista",
-                                MList(r'<tr valign=top><td bgcolor="#[0-9a-fA-F]+" width=320>',
+                                MList(r'<td width="290" align=',
                                       M())),
                                ])).get(webpage)
         self.lista = []
         for t in typlista:
             grupp = t["typrubrik"]
-            if not ordinarie:
-                grupp = grupp + " (BESTÄLLNINGSSORTIMENTET)"
             
             for p in t["prodlista"]:
-                self.lista.append(Product().from_html_name(p, grupp))
+                prod = Product().from_html_name(p, grupp)
+                
+                if prod.valid():
+                    # A real product
+                    self.lista.append(prod)
+                else:
+                    # This should be a dummy product with a container
+                    # to be added to the last real product
+                    self.lista[-1].add_containers_from(prod)
             
         if self.lista:
             self.state = VALID
@@ -674,16 +666,24 @@ class ProductList:
     def from_html_group(self, webpage, ordinarie):
         assert self.state == NEW
 
-        grupp = MSDeH(r'(?s)<font face="TimesNewRoman, Arial, Helvetica, sans-serif" size="5"><b>([<A-ZÅÄÖ].*?)</b>').get(webpage)
-        if not ordinarie:
-            grupp = grupp + " (BESTÄLLNINGSSORTIMENTET)"
-            
-        prodlista = MList(r'<A HREF="xdisplay',
+        grupp = MSDeH(r'(?s)<span class="rubrik1">(.*?)</span>').get(webpage)
+        g2 = grupp.replace("Beställningssortimentet", "")
+        if g2 <> grupp:
+            grupp = g2 + " (BESTÄLLNINGSSORTIMENTET)"
+
+        prodlista = MList(r'<td width="290" align=',
                           M()).get(webpage)
         
         self.lista = []
         for p in prodlista:
-            self.lista.append(Product().from_html_group(p, grupp))
+            prod = Product().from_html_group(p, grupp, best=1)
+            if prod.valid():
+                # A real product
+                self.lista.append(prod)
+            else:
+                # This should be a dummy product with a container
+                # to be added to the last real product
+                self.lista[-1].add_containers_from(prod)
             
         if self.lista:
             self.state = VALID
@@ -738,43 +738,10 @@ class ProductList:
 
         return f.getvalue()
 
-    def search_name(self, **args):
-        # Argumentet sortiment: S_ORD, S_BEST, S_BOTH
-        # ska översättas till "lågnivåargumentet"
-        # ordinarie=1, ordinarie=0 eller båda!
-        if args.has_key("sortiment"):
-            sortiment = args["sortiment"]
-            a = args.copy()
-            del a["sortiment"]
-            if sortiment == S_ORD:
-                a["ordinarie"] = 1
-                return self.search_name(**a)
-            elif sortiment == S_BEST:
-                a["ordinarie"] = 0
-                return self.search_name(**a)
-            else:
-                # Sök först i ordinarie (detta objekt)
-                a["ordinarie"] = 1
-                self.search_name(**a)
-                # Sök sedan i beställning (annat objekt)
-                a["ordinarie"] = 0
-                pl = ProductList()
-                pl.search_name(**a)
-                # Sätt ihop
-                self.merge(pl)
-                return self
-
-        return self.search_name_internal(**args)
-
-    def search_name_internal(self, namn, ordinarie):
-        if ordinarie:
-            p_ordinarie = "1"
-        else:
-            p_ordinarie = "0"
-        url = "http://www.systembolaget.se/pris/owa/zname?p_namn=%s&p_wwwgrptxt=%%25&p_rest=0&p_soundex=0&p_ordinarie=%s" % (urllib.quote(namn), p_ordinarie)
-
+    def search_name(self, namn):
+        url="http://www.systembolaget.se/pris/owa/sokpipe.SokNamn?p_namn=%s" % (urllib.quote(namn))
         webpage = WebPage(url).get()
-        self.from_html_name(webpage, ordinarie)
+        self.from_html_name(webpage)
 
         return self
 
@@ -1188,8 +1155,7 @@ def main():
             
     elif funktion == F_NAMN:
         # Namnsökning
-        pl = ProductList().search_name(namn = namn,
-                                      sortiment = sortiment)
+        pl = ProductList().search_name(namn = namn)
         if pl.valid():
             if kort or fullstandig:
                 pl.replace_with_full()
