@@ -1,3 +1,11 @@
+2003-04-26  Kent Engström  <kent@lysator.liu.se>
+
+	* systembolaget.py: Adapt to recent changes at the site: add range
+	searches for the clocks, change some product categories.
+
+	Fix bug when searching both "ordinarie" and "beställning"; 
+	no results were given if "ordinarie" failed.
+	
 2003-01-21  David Björkevik <davidb@lysator.liu.se>
 	* latexquote.py: new file, latex-quoting.
 	
