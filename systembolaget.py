@@ -108,6 +108,10 @@ def move_year_to_front(name):
 def left_zero_pad(str, minsize):
     return ("0"*minsize + str)[-minsize:]
 
+def varu_url(prod_no):
+    return "http://www.systembolaget.se/pris/owa/xdisplay?p_varunr=" + \
+           prod_no
+
 # Classes matching a single piece of data
 
 class MSF(MS):
@@ -261,8 +265,9 @@ class Product:
 
     def to_string_html(self):
         f = cStringIO.StringIO()
-        f.write("<TR><TD COLSPAN=2><B>%s (nr %s) %s</B></TD></TR>\n" % \
+        f.write('<TR><TD COLSPAN=2><B>%s (nr <a href=%s>%s</a>) %s</B></TD></TR>\n' % \
                 (self.dict["namn"],
+                 varu_url(self.dict["varunr"]),
                  self.dict["varunr"],
                  self.typical_price()))
 
@@ -285,8 +290,7 @@ class Product:
 
 class ProductFromWeb(Product):
     def __init__(self, prodno):
-        self.url = "http://www.systembolaget.se/pris/owa/xdisplay?p_varunr=" + \
-                   prodno
+        self.url = varu_url(prodno)
         u = urllib.urlopen(self.url)
         webpage = u.read()
         Product.__init__(self, webpage)
@@ -518,8 +522,9 @@ def do_html(nr_lista):
         else:
             print "<TR><TD COLSPAN=2>Varunr %s saknas.</TD></TR>\n" % varunr
     print "</TABLE>"
+    print "<P><FONT SIZE=-2>Uppgifterna är hämtade från <A HREF=http://www.systembolaget.se/svenska/varor/prislist/xindex.htm>Systembolagets katalog</A>.</FONT>"
     print "</BODY>"
-        
+    
 
 # MAIN
 
