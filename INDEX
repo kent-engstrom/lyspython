@@ -1,0 +1,26 @@
+Contents of the lyspython repository.
+
+(This is just an initial index. Authors are encouraged to fix any
+broken descriptions. Perhaps this file should also be sorted into
+categories?)
+
+File                 Description
+-----------------------------------------------------------------------------
+checksum.py          Various checksum calculations
+dilbert-fetch.py     Fetches strips from dilbert.com
+eniro.py             A python API for the privatpersoner.gulasidorna.se site
+fdselect.py          select-based FD multiplexing
+fields.py	     Field-management for HTML-forms
+filetree.py          Manipulate file hierarchies.
+fm2mail.py	     Code to import Freshmeat from NNTP to LysKOM via email
+heap.py              Heap (sorted list) implementation 
+holidays.py          Miscellaneous holiday-related calculations
+jddate.py            Date class
+jdtime.py            Time class
+kombug.py            LysKOM Protocol A wiretap program
+komstat.py           LysKOM statistics gatherer.  Requires kom++
+lookupstudent.py     Retrieves information about students at liu.se
+regexpmatcher.py     Some regexp utility function
+rt38.py              Conversion to and from RT-38 coordinate system (for maps)
+systembolaget.py     A python API for the systembolaget.se site
+telkat.py            A python API for the privatpersoner.gulasidorna.se site

@@ -1,3 +1,5 @@
+2003-01-21  David Björkevik <davidb@lysator.liu.se>
+	* INDEX: Created an initial version of a lyspython index.
 2003-01-19  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py: Refactor a lot of internal stuff to make
