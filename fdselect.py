@@ -166,11 +166,18 @@ class parser_base:
         whitespace-separated words.  It the calls a method named
         self.line_WORD where WORD is the first word of the line.  That
         method receives all the words as a list.
+
+        If self.line_WORD isn't defined, self.handle_broken_input_line
+        will be called.
         """
 
         words = string.split(s)
         if len(words):
-            method = getattr(self, "line_" + words[0])
+            try:
+                method = getattr(self, "line_" + words[0])
+            except AttributeError:
+                self.handle_broken_input_line(s)
+                return
             method(words)
 
     def handle_read_eof(self, unparsed):
@@ -188,8 +195,8 @@ def too_large(s, limit):
     return 1
 
 class fd_base:
-    maxreadbuf = 8192
-    readchunk = 8192
+    maxreadbuf = 31 * 8192
+    readchunk = 31 * 8192
     maxwritebuf = None
 
     def __init__(self, dispatcher, parser, eof_policy, rfd, wfd=None):
@@ -307,7 +314,7 @@ class socket_base(fd_base):
 
 class server_socket(socket_base):
 
-    maxwritebuf = 8192
+    maxwritebuf = 63 * 8192
 
     def __init__(self, dispatcher, parser, eof_policy, addr, client_class):
         socket_base.__init__(self, dispatcher, None, None)
@@ -415,6 +422,9 @@ class process(fd_owner):
         assert pid == self.__child_pid
         self.__child_pid = None
         self.eof_policy.report_dead_child(pid)
+
+    def kill(self, sig):
+        os.kill(self.__child_pid, sig)
 
 class dispatcher:
     def __init__(self):
