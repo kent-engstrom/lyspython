@@ -33,6 +33,8 @@ class Time(jddate.Date):
 	self.__setjd(jd - int(jd))
 
     def __setjd(self, jdfraction):
+	# Add half a second to make this code less fragile to rounding errors.
+	jdfraction = jdfraction + 0.5 / 86400
 	jdfraction = jdfraction * 24
 	self.__h = int(jdfraction)
 	jdfraction = 60 * (jdfraction - int(jdfraction))

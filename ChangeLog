@@ -1,3 +1,7 @@
+1999-12-14  Per Cederqvist  <ceder@cendio.se>
+
+	* jdtime.py (Time.__setjd): Fix rouding error.
+
 1999-11-16  Per Cederqvist  <ceder@paragon.cendio.se>
 
 	* jdtime.py: New file.  This implements the same things as jddate,
