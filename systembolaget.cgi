@@ -93,7 +93,7 @@ class Form:
 Används sedan knappen <b>Uppdatera</b> för att kontrollera att varorna finns i katalogen.
 När rätt varor visas: välj <b>Skapa</b> för att skapa lista för utskrift.
 
-<P>Uppgifterna hämtas direkt ur <A HREF=http://www.systembolaget.se/SokDrycker/">Systembolagets katalog</A>.
+<P>Uppgifterna hämtas direkt ur <A HREF="http://www.systembolaget.se/SokDrycker/">Systembolagets katalog</A>.
 
 <P>Rubrik:<BR><INPUT TYPE=TEXT NAME="rubrik" VALUE="%s" SIZE=60>
 <P>
@@ -163,7 +163,7 @@ När rätt varor visas: välj <b>Skapa</b> för att skapa lista för utskrift.
                 w(vara.to_string_html())
         w("""
 </TABLE>
-<P><FONT SIZE=-2>Uppgifterna är hämtade från <A HREF=http://www.systembolaget.se/SokDrycker/">Systembolagets katalog</A>.</FONT>
+<P><FONT SIZE=-2>Uppgifterna är hämtade från <A HREF="http://www.systembolaget.se/SokDrycker/">Systembolagets katalog</A>.</FONT>
 """)
         self.html_bottom()
         
