@@ -1,3 +1,14 @@
+2002-03-03  Kent Engstrom  <kent@lysator.liu.se>
+
+	* eniro.py: New file for command-line searching of
+	http://www.privatpersoner.gulasidorna.se/. Based on
+	regexpmatcher.py, just like systembolaget.py.
+
+	* regexpmatcher.py (MSDeH): Convert "&amp;" to "&".
+	(MList): Return an earlier end position: the end of the
+	last entry match, not the end position sent to MList itself.
+	Return the start position if no entries are found at all.
+	
 2002-02-28  Pontus Skold  <Pontus.Skold@dis.uu.se>
 
 	* riktnr.txt: New file. (Hopefully) All areacodes in Sweden. Used
