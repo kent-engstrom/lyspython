@@ -233,6 +233,10 @@ def FromToday():
     (dy,dm,dd,th,tm,ts,wd,dayno,ds)=time.localtime(time.time())
     return FromYMD(dy,dm,dd)
 
+def FromUnixTime(t):
+    (dy,dm,dd,th,tm,ts,wd,dayno,ds)=time.localtime(t)
+    return FromYMD(dy,dm,dd)
+
 rx_dashed=regex.compile("^\([0-9]+\)-\([0-9]+\)-\([0-9]+\)$")
 rx_yyyymmdd=regex.compile("^\([0-9][0-9][0-9][0-9]\)\([0-9][0-9]\)\([0-9][0-9]\)$")
 rx_yymmdd=regex.compile("^\([0-9][0-9]\)\([0-9][0-9]\)\([0-9][0-9]\)$")
