@@ -5,6 +5,7 @@ import urllib,socket,sys,regex,os
 # Configuration
 
 server="www.unitedmedia.com:80"
+server2="umweb1.unitedmedia.com:80"
 indexurl="http://"+server+"/comics/dilbert/archive/"
 
 # Connect and get archive index page
@@ -26,11 +27,11 @@ while pos<>-1:
 
 # Now see  if we need to download any of them
 
-rx=regex.compile("archive/images/dt\([0-9]+\)_\([0-9]+\)\.gif")
+rx=regex.compile("archive/images/dilbert\([0-9]+\)\.gif")
 
 for date in dates:
     filename="dilbert-%s.gif"%date
-    htmlurl="http://"+server+"/comics/dilbert/archive/dilbert%s.html"%date
+    htmlurl="http://"+server2+"/comics/dilbert/archive/dilbert%s.html"%date
     try:
 	lf=open(filename,"r")
 	lf.close()
@@ -48,9 +49,9 @@ for date in dates:
 	print "%s: no image reference found"%filename
 	continue
 
-    (date,rnd)=rx.group(1,2)
+    (rnd)=rx.group(1)
 
-    picurl="http://"+server+"/comics/dilbert/archive/images/dt%s_%s.gif"%(date,rnd)
+    picurl="http://"+server2+"/comics/dilbert/archive/images/dilbert%s.gif"%(rnd)
 
     f=urllib.urlopen(picurl)
     picture=f.read()
