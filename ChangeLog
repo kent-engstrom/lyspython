@@ -1,3 +1,8 @@
+2002-05-23  Kent Engström  <kent@lysator.liu.se>
+
+	* systembolaget.py: Adapt to the change from "Druvsorter" to
+	"Druvsorter/Råvaror" on the site.
+
 2002-05-01  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py: Add "alla" on search result pages for articles
