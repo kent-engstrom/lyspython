@@ -70,12 +70,15 @@ class MS(M):
         return string.join(string.split(string.strip(data)), " ")
 
 class MSDeH(MS):
-    """Match as M, but strip away HTML tags. Convert &bnsp; to normal space."""
+    """Match as M, but strip away HTML tags. Convert &bnsp; to normal space.
+       Also convert &amp; to a normal ampersand."""
     
     def clean(self, data):
-        return re.sub("&nbsp;", " ",
-                      re.sub("<.*?>", "",
-                             string.join(string.split(string.strip(data)), " ")))
+        return re.sub("&amp;", "&", 
+                      re.sub("&nbsp;", " ",
+                             re.sub("<.*?>", "",
+                                    string.join(string.split(\
+            string.strip(data)), " "))))
 
 
 class MSet:
@@ -111,15 +114,16 @@ class MList:
         if e_pos is None: e_pos = len(data)
         list = []
         pos = findall_pos(self.begin, data, s_pos, e_pos) + [e_pos]
+        entry_end_pos = s_pos
         if debug: print "Positions for", self.begin,":", pos
         for i in range(0,len(pos)-1):
             if debug:
                 print "Looking for list entry between",pos[i],"and",pos[i+1]
                 if (pos[i+1] - pos[i]) < 400:
                     print "Entry is:", data[pos[i]:pos[i+1]]
-            (found, dummy_pos) = self.matcher.match(data, pos[i], pos[i+1])
+            (found, entry_end_pos) = self.matcher.match(data, pos[i], pos[i+1])
             list.append(found)
-        return (list, e_pos)
+        return (list, entry_end_pos)
 
 class MLimit:
     """Narrow the allowable search range without matching."""
