@@ -127,9 +127,9 @@ class MSC(MS):
 
 class MSVolym(MS):
     def clean(self, data):
-        return re.sub("[^ ]ml", " ml",
-                      string.join(string.split(string.strip(data)), " "))
-
+        # Things to clean up: spaces around the data
+        # No space, or more than one space between digits and "ml"
+        return string.join(string.split(string.strip(string.replace(data, "ml", " ml"))), " ")
 # Blåfärgade artiklar finns i alla butiker
 class MSAllaB(MS):
     def clean(self, data):

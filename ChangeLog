@@ -1,3 +1,8 @@
+2002-11-25  Kent Engström  <kent@lysator.liu.se>
+
+	* systembolaget.py (MSVolym.clean): Fix bug that resulted in
+	"750ml" being cleaned to "75 ml".
+
 2002-11-12  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py: Adapt to format changes on the site:
