@@ -125,6 +125,21 @@ def varu_url(prod_no):
     return "http://www.systembolaget.se/pris/owa/xdisplay?p_varunr=" + \
            prod_no
 
+def klock_argument(s):
+    # Parse number or range into min-max tuple
+    try:
+        (smin,smax) = string.split(s, "-")
+    except ValueError:
+        single = int(s)
+        return (single, single)
+
+    if smin == "":
+        return (0,int(smax))
+    elif smax== "":
+        return (int(smin), 12)
+    else:
+        return (int(smin), int(smax))
+
 # A helper class to make debugging easier and faster by caching
 # webpages and storing them if WEBPAGE_DEBUG is true.
 # This is only for debugging, as there is no code to handle GC
@@ -633,7 +648,7 @@ class ProductList:
     def from_html_name(self, webpage, ordinarie):
         assert self.state == NEW
         
-        typlista = MList(r'<tr><td><font face="TimesNewRoman, Arial, Helvetica, sans-serif" size="5">',
+        typlista = MList(r'<font face="TimesNewRoman, Arial, Helvetica, sans-serif" size="5">',
                          MSet([("typrubrik", MSDeH(r'<b>(.*?) *</b>')),
                                ("prodlista",
                                 MList(r'<tr valign=top><td bgcolor="#[0-9a-fA-F]+" width=320>',
@@ -687,7 +702,9 @@ class ProductList:
         # - It assumes that there is no overlap between lists
         # - It does not not reorder
         self.lista.extend(other.lista)
-
+        if self.state == VALID or other.state == VALID:
+            self.state = VALID # Superugly kludge
+        
     # Replace the minimal Product object (from a name/group search)
     # with a full one (requires a web page fetch per product = expensive)
     def replace_with_full(self):
@@ -842,11 +859,13 @@ class ProductList:
             p_ursprung = urllib.quote(ursprung)
 
         grupp = urllib.quote(grupp)
-        url = "http://www.systembolaget.se/pris/owa/sokpipe.sokpara?p_wwwgrp=%s&p_varutyp=%s&p_ursprung=%s&p_prismin=%s&p_prismax=%s&p_type=%s&p_kl_1=%d&p_kl_2=%d&p_kl_3=%d&p_kl_fat=%d%s%s%s&p_butnr=%s&p_ordinarie=%s&p_rest=0&p_back=" % \
+        url = "http://www.systembolaget.se/pris/owa/sokpipe.sokpara?p_wwwgrp=%s&p_varutyp=%s&p_ursprung=%s&p_prismin=%s&p_prismax=%s&p_type=%s&p_kl_1_1=%d&p_kl_1_2=%d&p_kl_2_1=%d&p_kl_2_2=%d&p_kl_3_1=%d&p_kl_3_2=%d&p_kl_fat=%d%s%s%s&p_butnr=%s&p_ordinarie=%s&p_back=" % \
               (grupp, p_varutyp, p_ursprung,
                min_pris, max_pris,
                p_type,
-               p_klockor[0], p_klockor[1], p_klockor[2], 
+               p_klockor[0][0],p_klockor[0][1],
+               p_klockor[1][0],p_klockor[1][1],
+               p_klockor[2][0],p_klockor[2][1],
                fat_karaktar,
                p_eko,
                p_kosher,
@@ -880,7 +899,7 @@ def main():
     nyhet = 0
     varutyp = None
     ursprung = None
-    p_klockor = [0,0,0]
+    p_klockor = [(0,0), (0,0) ,(0,0)]
     pos_fyllighet = None
     pos_stravhet = None
     pos_fruktsyra = None
@@ -909,13 +928,14 @@ def main():
     
                                         "röda-viner",
                                         "vita-viner",
-                                        "övriga-viner",
+                                        "mousserande-viner",
+                                        "roséviner",
                                         "starkvin",
                                         "sprit",
                                         "öl",
                                         "cider",
                                         "blanddrycker",
-                                        "lättdrycker",
+                                        "alkoholfritt",
                                         
                                         "min-pris=",
                                         "max-pris=",
@@ -986,9 +1006,13 @@ def main():
             funktion = F_PRODUKT
             grupp = "VITA VINER"
             (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
-        elif opt == "--övriga-viner":
+        elif opt == "--roséviner":
             funktion = F_PRODUKT
-            grupp = "ÖVRIGA VINER"
+            grupp = "ROSÉVINER"
+            (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
+        elif opt == "--mousserande-viner":
+            funktion = F_PRODUKT
+            grupp = "MOUSSERANDE VINER"
             (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
         elif opt == "--starkvin":
             funktion = F_PRODUKT
@@ -1008,9 +1032,9 @@ def main():
         elif opt == "--blanddrycker":
             funktion = F_PRODUKT
             grupp = "BLANDDRYCKER"
-        elif opt == "--lättdrycker":
+        elif opt == "--alkoholfritt":
             funktion = F_PRODUKT
-            grupp = "LÄTTDRYCKER"
+            grupp = "ALKOHOLFRITT"
         elif opt == "--min-pris":
             min_pris = optarg
         elif opt == "--max-pris":
@@ -1044,15 +1068,15 @@ def main():
         elif opt == "--ursprung":
             ursprung = optarg
         elif opt == "--fyllighet":
-            p_klockor[pos_fyllighet] = int(optarg)
+            p_klockor[pos_fyllighet] = klock_argument(optarg)
         elif opt == "--strävhet":
-            p_klockor[pos_stravhet] = int(optarg)
+            p_klockor[pos_stravhet] = klock_argument(optarg)
         elif opt == "--fruktsyra":
-            p_klockor[pos_fruktsyra] = int(optarg)
+            p_klockor[pos_fruktsyra] = klock_argument(optarg)
         elif opt == "--sötma":
-            p_klockor[pos_sotma] = int(optarg)
+            p_klockor[pos_sotma] = klock_argument(optarg)
         elif opt == "--beska":
-            p_klockor[pos_beska] = int(optarg)
+            p_klockor[pos_beska] = klock_argument(optarg)
             
         elif opt == "--fat-karaktär":
             fat_karaktar = 1
@@ -1141,10 +1165,11 @@ def main():
     """ % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*3)
         print "Produktsökning:"
         print """
-       %s { --röda-viner   | --vita-viner   |
-       %s   --övriga-viner | --starkvin     |
-       %s   --sprit        | --öl-och-cider |
-       %s   --blanddrycker | --lättdrycker }
+       %s { --röda-viner    | --vita-viner        |
+       %s   --roséviner     | --mousserande-viner |
+       %s   --starkvin      | --sprit             |
+       %s   --öl            | --cider             |
+       %s   --blanddrycker  | --alkoholfritt }
        %s [{--beställningssortimentet |
        %s   --ordinariesortimentet}]
        %s [--min-pris=MIN] [--max-pris=MAX]
@@ -1160,7 +1185,7 @@ def main():
        %s   --sötma=N     | --beska=N}]
        %s [{--fat-karaktär | --ej-fat-karaktär}]
        %s [{--bara-varunr | --kort | --fullständig}]
-    """ % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*18)
+    """ % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*19)
 
 
 if __name__ == '__main__':
