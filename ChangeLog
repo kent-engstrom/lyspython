@@ -1,3 +1,9 @@
+2003-12-15  Emil Styrke  <emil@lysator.liu.se>
+
+	* fields.py (OnetimeField): Fixed so a user-supplied validator
+	isn't called when the value has been made unchangeable, and thus
+	not in the form anymore.
+
 2003-10-28  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py (Container.from_html_normal): Adapt to the
