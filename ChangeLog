@@ -1,3 +1,9 @@
+2000-12-13  Kent Engström  <kent@unit.liu.se>
+
+	* jddate (Date.__hash__): New function.
+	(Date.GetMonthStart): New function.
+	(Date.GetMonthEnd): New function.
+	
 2000-11-21  Kent Engstrom  <kent@lysator.liu.se>
 
 	* checksum.py (calculate_pnralg_checksum): Fixed bug that

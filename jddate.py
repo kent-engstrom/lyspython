@@ -110,6 +110,12 @@ class Date:
 	else:
 	    return "<Date invalid>"
     
+    def __hash__(self):
+	if self.__valid:
+	    return ymd_to_jd(self.__y, self.__m, self.__d)
+	else:
+	    return 0
+
     def IsValid(self):
 	return self.__valid
 
@@ -185,6 +191,20 @@ class Date:
     def GetString_YYMMDD(self):
 	(y, m, d) = self.GetYMD()
 	return "%02d%02d%02d"%(y % 100, m, d)
+
+    # Getting some other dates from the current
+    
+    def GetMonthStart(self):
+        return FromYMD(self.__y, self.__m, 1)
+    
+    def GetMonthEnd(self):
+        m = self.__m + 1
+        if m > 12:
+            m = m - 12 
+            y = self.__y + 1
+        else:
+            y = self.__y
+        return FromYMD(y, m, 1) - 1
 
     # Adding an integer: step that many days into the future
 
