@@ -19,6 +19,7 @@ jddate.py            Date class
 jdtime.py            Time class
 kombug.py            LysKOM Protocol A wiretap program
 komstat.py           LysKOM statistics gatherer.  Requires kom++
+latexquote.py	     Quotes strings for insertion into latex documents
 lookupstudent.py     Retrieves information about students at liu.se
 regexpmatcher.py     Some regexp utility function
 rt38.py              Conversion to and from RT-38 coordinate system (for maps)
