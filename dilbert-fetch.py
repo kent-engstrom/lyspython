@@ -57,12 +57,15 @@ for date in dates:
 
     picurl="http://"+server2+"/comics/dilbert/archive/images/dilbert%s.gif"%(rnd)
 
-    print "%s: fetching..."%filename
+    print "%s: fetching"%filename
+
     f=urllib.urlopen(picurl)
-    picture=f.read()
+    picture=f.read(100000)
+    # Calling with no argument seens to cause truncation in 1.5.1
+    
     f.close()
 
-    f=open(filename,"w")
+    f=open(filename,"wb")
     f.write(picture)
     f.close()
 
