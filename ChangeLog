@@ -1,3 +1,7 @@
+Sun Jun  7 20:41:42 1998  Per Cederqvist  <ceder@lysator.liu.se>
+
+	* kombug.py: New file, which can be used to debug LysKOM clients.
+
 Thu Jun  4 21:43:05 1998  Peter Liljenberg  <petli@lysator.liu.se>
 
 	* komstat.py: New file, KOM statistics.
