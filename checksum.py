@@ -156,7 +156,7 @@ def calculate_pnralg_checksum(digits, min_length=1, max_length=None):
     if sum == None:
 	return None
     else:
-	return (chr(ord('0') + 10 - (sum % 10)))
+	return (chr(ord('0') + (-sum % 10)))
 
 def valid_pnralg(digits, min_length=1, max_length=None):
     """Check if a personnummer-like string is valid.
@@ -176,6 +176,7 @@ def valid_pnralg(digits, min_length=1, max_length=None):
 
     check_digit = calculate_pnralg_checksum(digits[:-1], \
 					    min_length, max_length)
+
     if check_digit == None or check_digit <> digits[-1:]:
 	return 0
     else:
@@ -231,7 +232,7 @@ def valid_personnummer(pnr, hyphen_allowed=1, hyphen_required=0):
 # Test
 def test():
     for arg in sys.argv[1:]:
-	print arg,valid_pnralg(arg)
+	print arg,valid_personnummer(arg)
 #	print arg,valid_isbn(arg)
 
 if __name__ == '__main__':
