@@ -1,3 +1,4 @@
+# -*- coding: iso-8859-1 -*-
 # Quotes a string so that it can be put in a latex-document.
 # This is useful for printed reports etc.
 #

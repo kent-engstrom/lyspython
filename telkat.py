@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: iso-8859-1 -*-
 #   
 # Copyright (c) 2002, Pontus Sköld (pont@it.uu.se)
 #

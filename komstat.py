@@ -1,4 +1,5 @@
 #!/sw/kom++/bin/python
+# -*- coding: iso-8859-1 -*-
 
 # LysKOM statistics gatherer.  Requires kom++
 

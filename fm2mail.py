@@ -1,4 +1,5 @@
 #!/sw/local/bin/python
+# -*- coding: iso-8859-1 -*-
 
 # Code to import Freshmeat from NNTP to LysKOM via email.
 # Could be used to import to any e-mail address.

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: iso-8859-1 -*-
 # (C) 2002 Kent Engström. Released under the GNU GPL.
 
 import sys

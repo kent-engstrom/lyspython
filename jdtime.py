@@ -1,4 +1,5 @@
 # Time class for Python
+# -*- coding: iso-8859-1 -*-
 # Copyright 1997, 1998 Kent Engström.
 # Copyright 1999 Per Cederqvist
 # Released under the GNU GPL.

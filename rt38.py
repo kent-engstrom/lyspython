@@ -1,3 +1,4 @@
+# -*- coding: iso-8859-1 -*-
 # Conversion between latitude, longitude and the RT-38
 # coordinate system ("Rikets trianguleringsnät") used on Swedish
 # survey maps

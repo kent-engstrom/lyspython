@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: iso-8859-1 -*-
 # lookupstudent.py - A Quick hack to see what courses a person attends, and
 # what education he's registrered on.
 # Copyright (c) 2002 Erik Forsberg <forsberg@lysator.liu.se>
