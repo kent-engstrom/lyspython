@@ -1,3 +1,22 @@
+2003-01-19  Kent Engstrom  <kent@astrea.hack.org>
+
+	* systembolaget.py: Refactor a lot of internal stuff to make
+	the central classes cleaner, in preparation for new features.
+	(see revisions 1.23.2.1..1.24.2.9 on sys_refactoring_branch).
+
+	Remove the --soundex option.
+
+	Let the default be to search both "ordinarie-" and
+	"beställningssortimentet". Flags can be used to restrict a search
+	to only one of them.
+
+	Add options "--kort" and "--fullständig" to name and group searches,
+	to recursively to a product search and display the same data
+	as that would have given.
+
+	* regexpmatcher.py: Add a "quick" get metod to relevant classes
+	(implemented using the GetMixin mixin class).
+
 2003-01-14  Kent Engstrom  <kent@astrea.hack.org>
 
 	* systembolaget.py: Add new classes WebCache and WebPage to enable
