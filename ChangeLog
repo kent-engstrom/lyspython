@@ -1,3 +1,18 @@
+2005-03-03  Per Cederqvist  <ceder@ingate.com>
+
+	Declare the charset in Python files that uses iso-8859-1.
+	* checksum.py: Declare the charset as per PEP 263.
+	* jddate.py: Ditto.
+	* eniro.py: Ditto.
+	* fields.py: Ditto.
+	* fm2mail.py: Ditto.
+	* jdtime.py: Ditto.
+	* komstat.py: Ditto.
+	* latexquote.py: Ditto.
+	* lookupstudent.py: Ditto.
+	* rt38.py: Ditto.
+	* telkat.py: Ditto.
+
 2004-11-03  Kent Engström  <kent@ceres.unit.liu.se>
 
 	* systembolaget.py (Container.from_html_normal): Adapt to changes.
