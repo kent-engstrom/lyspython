@@ -247,5 +247,32 @@ if __name__ == "__main__":
             print "Sökningen gav inga svar."
 
     else:
-        print "Hjälptext saknas."
+        print "eniro.py --- " \
+              "kommandoradssökning i telefonkatalogen för privatpersoner"
+        print "-"*70
+        print
+        print "Namnsökning"
+        print """
+   eniro.py [--förnamn=FÖRNAMN] [--efternamn=EFTERNAMN]
+            [--titel=TITEL] [--adress=ADRESS]
+            [--postnr=POSTNR] [--område=OMRÅDE]
+            [--max=MAX-ANTAL-ÖNSKADE-TRÄFFAR]
+            [FÖRNAMN [EFTERNAMN [OMRÅDE]]]
+            
+    Förnamn eller efternamn måste anges. Villkoren förnamn, efternamn,
+    titel och adress kan avslutas med "*" för att söka på början istället
+    för exakt likhet. På samma sätt anger ~ att sökningen ska göras
+    inexakt. Observera också att förnamn, efternamn och område kan
+    ges som argument istället för optioner.
+"""
+        print "Nummersökning"
+        print """
+   eniro.py [--riktnr=RIKTNR] [--telefonnr=TELEFONNR]
+            [{RIKTNR-TELEFONNR | RIKTNR TELEFONNR}]
+
+    Som argument kan alltså numret skrivas som en enhet med
+    bindestreck i, eller med riktnr och telefonnr var för sig.
+
+"""
+        
         
