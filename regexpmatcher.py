@@ -21,25 +21,47 @@ def findall_pos(pattern, data, s_pos, e_pos):
             pos = m.end(0)
         else:
             return l
+        
+class GetMixin:
+    def get(self, data, s_pos=0, e_pos=None):
+        """Match the pattern. Return string/None.
+        
+        FIXME: Will we use this interface???"""
+        
+        (res, pos) = self.match(data, s_pos, e_pos)
+        return res
 
-class M:
+class M(GetMixin):
     """Match a pattern, return a string or None."""
 
-    def __init__(self, pattern, advance=1):
+    def __init__(self, pattern = None, advance=1):
         self.pattern = self.elaborate_pattern(pattern)
-        self.re = re.compile(self.pattern)
+        if self.pattern:
+            self.re = re.compile(self.pattern)
         self.advance = advance
         
     def match(self, data, s_pos=0, e_pos=None):
         """Match the pattern. Return string/None + start for next search."""
 
         if e_pos is None: e_pos = len(data)
-        m = self.re.search(data, s_pos, e_pos)
-        if m:
-            if debug: print "Found", m.group(1)
-            data = self.clean(m.group(1))
+        if self.pattern:
+            m = self.re.search(data, s_pos, e_pos)
+            if m:
+                if debug: print "Found", m.group(1)
+                data = m.group(1)
+                match_end = m.end(1)
+                found = 1
+            else:
+                found = 0
+        else:
+            match_end = e_pos
+            data = data[s_pos:e_pos]
+            found = 1
+
+        if found:
+            data = self.clean(data)
             if self.advance:
-                return (data, m.end(1))
+                return (data, match_end)
             else:
                 return (data, s_pos)
         else:
@@ -83,7 +105,7 @@ class MSDeH(MS):
             string.strip(data)), " "))))
 
 
-class MSet:
+class MSet(GetMixin):
     """Match a set of patterns. Return a dictionary."""
     
     def __init__(self, matchers):
@@ -104,7 +126,7 @@ class MSet:
 
 # Class matching a list of data, producing a list
 
-class MList:
+class MList(GetMixin):
     """Match a single pattern repeatedly. Return a list."""
     
     def __init__(self, begin, matcher):
@@ -127,7 +149,8 @@ class MList:
             list.append(found)
         return (list, entry_end_pos)
 
-class MLimit:
+
+class MLimit(GetMixin):
     """Narrow the allowable search range without matching."""
     
     def __init__(self, pattern, matcher):
@@ -149,4 +172,3 @@ class MLimit:
         else:
             #print "Limit failed"
             return (None, s_pos) # or should we call the matcher with empty data?
-    
