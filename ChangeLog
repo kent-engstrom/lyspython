@@ -1,3 +1,7 @@
+2001-04-09  Kent Engström  <kent@lysator.liu.se>
+
+	* systembolaget.py: New file. Searching the Systembolaget catalog :-)
+
 2001-02-18  Kent Engström  <kent@lysator.liu.se>
 
 	* jddate.py, jdtime.py: The regexp module is deprecated. Use re
