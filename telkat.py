@@ -23,7 +23,7 @@
 #
 
 #
-# This code requires Python 1.6 or later.
+# This code requires Python 2.something or later.
 #
 
 """telkat provides an interface to query the Swedish white paper service
@@ -49,7 +49,7 @@ the respective functions for more information."""
 import sgmllib
 import urllib
 import string
-
+import encodings
 
 class telkatError( Exception ):
     "Class for errors in this module, with a friendly message"
@@ -78,35 +78,38 @@ class telkatInfo:
     because of the maximum limit of 250 entries returned for any
     given query."""
 
-    def __init__( self, tdl ):
+    def __init__( self, tdl, txt ):
 
         self.datalost = 0
         self.t = ()
 
-        tdl = tdl[1:]  # The first field is always empty, throw it away
+        if txt.find('ingen träff') != -1:                          
+            raise telkatError( "Ingen träff" )
+        elif txt.find('tekniskt') != -1:
+            raise telkatError( "Tekniskt underhåll"  )
+        elif txt.find('visar max') != -1:
+            self.datalost = 1
+            
+        
+        for p in tdl:
+            if len(p) < 3:
+                 raise telkatError( "Konstigt format eller ingen träf" )
+             
+            (name, number, address ) = p[0:3]
+
+            name = encodings.codecs.latin_1_decode( name )[0].strip()
+            address = encodings.codecs.latin_1_decode( address )[0].strip()
+            number = encodings.codecs.latin_1_decode( number )[0].strip()
+            
+            if name and address and number:
+                self.t = self.t + ( { 'number':number, 'name':name, 'adress':address, 'address':address }, )
+
+
         
         # Check for different messages that may occur instead/infront
         # of the information
          
-        if tdl[0] == 'Sökningen misslyckades':                          
-            raise telkatError( "Sökningen misslyckades; "+tdl[4] )
-        elif tdl[0][:18] == 'Tekniskt underhåll':
-            raise telkatError( "Tekniskt underhåll; " + tdl[4] )
-        elif tdl[0][:21] == 'Träfflistan visar max':
-            self.datalost = 1
-            tdl = tdl[2:]
-                
-        while 1:
-            tmp = tdl[0:4]               # Get information about one number
-            
-            if len( tmp ) < 4 :          # Got less than 4 items?
-                break;
-
-            (name, dummy, adress, number) = tmp
-
-            self.t = self.t + ( { 'number':number, 'name':name, 'adress':adress }, )
-            tdl = tdl[4:]
-                
+                                
 
     def lostdata( self ):
         return self.datalost
@@ -133,26 +136,47 @@ class telkatParser( sgmllib.SGMLParser ):
 
     def reset( self ):
         sgmllib.SGMLParser.reset( self )
-        self.tdl = []
-           
+        self.tdl = [[""]]
+        self.ignore = 1
+        self.withintable = 0
+        self.tabletxt = ''
+        
+    def handle_comment( self, comment ):
+        if comment.strip() == 'result':
+            self.ignore = 0
+        elif comment.strip() == 'end result':
+            self.ignore = 1
+            
     def handle_data( self, data ):
-        l = len( self.tdl ) # Have we encountered any TD?
 
-        if not l:
+        if self.ignore or not len(self.tdl): 
             return
 
-        i = l-1             # Find which to work with. 
+        if not self.withintable:
+            self.tdl[-1][-1] += data
+        else:
+            self.tabletxt += data
+        
+    def start_br( self, attrs ):
+        if not self.ignore:
+            self.tdl[-1].append("")
 
-        self.tdl[i] = self.tdl[i] +  string.join( data.split() ) 
+    def start_table( self, attrs ):
+        self.withintable += 1
 
+    def end_table( self):
+        self.withintable -= 1
 
-    def start_td( self, attrs ):
-        self.tdl.append("")
+    def start_hr( self, attrs ):
+        if not self.ignore:
+            self.tdl.append([""])
 
     def report( self ):
-        return telkatInfo( self.tdl )
-     
+        if self.tdl[0]:
+            self.tdl[0] = self.tdl[0][1:-1]
 
+        return telkatInfo( self.tdl, self.tabletxt )
+     
 
 
 
@@ -190,7 +214,7 @@ regions = {
     'YSTAD':'2',
     'ÖREBRO':'17',
     'ÖSTERSUND':'28',
-    'HELA LANDET':0
+    'HELA LANDET':''
 }
     
 def GetNumInfo( areacode, number ):
@@ -200,9 +224,9 @@ def GetNumInfo( areacode, number ):
     areacode areacode and phonenumber number, and
     returns a string with the raw output."""
 
-    query = "http://www.privatpersoner.gulasidorna.se/search/hits.asp?first=1&last=1&areacode=%s&phone=%s" %\
+    query = "http://privatpersoner.eniro.se/query?what=wp&phone_number=%s" %\
     (
-        str(areacode),
+        str(areacode)+
         str(number)
         )
 
@@ -213,28 +237,60 @@ def GetNumInfo( areacode, number ):
     return s
 
 
+def GetCompNumInfo( areacode, number ):
+    """GetCompNumInfo( areacode, number ) -> string
+    
+    Retrieves information about the company with 
+    areacode areacode and phonenumber number, and
+    returns a string with the raw output."""
+    
+    query = "http://www.gulasidorna.se/query?what=yp&newSearch=1&phone_prefix=%s&phone_number=%s" %\
+    (
+        str(areacode),
+        str(number)
+        )
 
+    f = urllib.URLopener().open( query )
+    s = string.join( f.readlines() )
+    f.close()
+        
+    return s
+    
+
+def GetCompInfo( name = '',
+                 nametype = 'exact',
+                 address = '',
+                 addresstype = '',
+                 zipcode = '',
+                 area = ''):
+    pass
+                
 
 
 def GetPersInfo( first = '',
                  last = '',
                  firsttype = 'exact',
                  lasttype = 'exact',
-                 region = '0',
+                 region = '',
                  adress = '',
+                 address = '',
+                 addresstype = 'exact',
                  zipcode = '',
                  area = '',
                  title = '',
                  titletype = 'exact'
                  ):
     """GetPersInfo( first, last, firsttype, lasttype,
-             region, adress, zipcode, area, title,
+             region, adress, address, addresstype, zipcode, area, title,
              titletype ) -> string
 
     Perform the query to Eniro and return the raw data."""
-    
-    query = "http://www.privatpersoner.gulasidorna.se/search/hits.asp?first=1&last=250&firstnameType=%s&lastnameType=%s&region=%s&adress=%s&zipcode=%s&area=%s&title=%s&titleType=%s&firstname=%s&lastname=%s" % ( firsttype, lasttype, region, adress, zipcode, area, title, titletype, first, last )
 
+    if adress and not address:
+        address = adress
+        
+    query = "http://privatpersoner.eniro.se/query?what=wp&firstnameType=%s&lastnameType=%s&region=%s&address=%s&addresstype=%s&zipcode=%s&area=%s&title=%s&titleType=%s&firstname=%s&lastname=%s" % ( firsttype, lasttype, region, address, addresstype, zipcode, area, title, titletype, first, last )
+   
     f = urllib.URLopener().open( query )
     s = string.join( f.readlines() )
     f.close()
@@ -243,38 +299,6 @@ def GetPersInfo( first = '',
 
 
 
-
-
-def NumberToAreacodeAndPhone( n ):
-    """numberToAreacodeAndPhone( n ) -> (string, string)
-
-    Converts a phone number to a tuple of strings where the first element
-    represents the areacode and the second represent the phone number.
-
-    If n includes a dash (-), it is trusted to separate the areacode and
-    phonenumber
-    
-    Given invalid input a telkatError is raised."""
-
-    n = string.join( n.split(), '' )                       # Remove any spaces.
-
-    if n[:3] == '+46':                             # Number in international form?
-        n = '0' + n[3:]                            # Make national
-
-    i = n.find( '-' )
-        
-    if -1 != i:                                   # Contains a dash?
-        return ( n[ :i ], n[ i+1: ] )             # Trust it to separate correctly
-        
-    f = open( "riktnr.txt" )                 # No dash, fall back to file
-
-    for p in f.readlines():
-        q = p.strip()         # Get rid of surrounding spaces
-
-        if q == str(n)[ : len(q) ]: # Found it? 
-            return ( q, str(n)[ len(q) : ] )  # Return correct tuple ac, number
-
-    raise telkatError( 'Invalid phonenumber' )           # Not found
 
     
 
@@ -285,16 +309,18 @@ def NameLookup( first  ='',
                 last = '',
                 firsttype = 'exact',
                 lasttype = 'exact',
-                region = '0',
+                region = '',
                 adress = '',
+                address = '',
+                addresstype = 'exact',
                 zipcode = '',
                 area = '',
                 title = '',
                 titletype = 'exact'
                 ):
 
-    """NameLookup( first, lasts, firsttype, lasttype, region, adress,
-    zipcode, area, title, titletype ) => list of strings
+    """NameLookup( first, last, firsttype, lasttype, region, adress,
+    address, addresstype, zipcode, area, title, titletype ) => list of strings
 
     Performs a query according to the given parameters and returns a
     telkatInfo instance (or raises a telkatError if there was a
@@ -308,23 +334,28 @@ def NameLookup( first  ='',
     of telkat.region.
     """
 
+    if adress and not address:
+        address = adress
+        
     if not region.isdigit():                  # Need to look up region code?
         if region.upper() in regions.keys(): 
             region = regions[ region.upper() ]
         else:
-            region = '0'
+            region = '' # All of sweden
         
     k = telkatParser()
-    k.feed( GetPersInfo( first,
-                         last,
-                         firsttype,
-                         lasttype,
-                         region,
-                         adress,
-                         zipcode,
-                         area,
-                         title,
-                         titletype
+    k.feed( GetPersInfo( first = first,
+                         last = last,
+                         firsttype = firsttype,
+                         lasttype = lasttype,
+                         region = region,
+                         adress = address,
+                         address = address,
+                         addresstype = addresstype,
+                         zipcode = zipcode,
+                         area = area,
+                         title = title, 
+                         titletype = titletype
                          )
             )
     k.close()
@@ -341,9 +372,8 @@ def NumberLookup( number = '08' ):
     Performs a query for the given phone number and returns a
     telkatInfo instance (or raises a telkatError)."""
 
-    (ac, p) = NumberToAreacodeAndPhone( number )
     k = telkatParser()
-    k.feed( GetNumInfo( ac, p ))
+    k.feed( GetNumInfo( "", number ))
     k.close()
 
     return k.report()
