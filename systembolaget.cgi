@@ -163,7 +163,7 @@ När rätt varor visas: välj <b>Skapa</b> för att skapa lista för utskrift.
                 w(vara.to_string_html())
         w("""
 </TABLE>
-<P><FONT SIZE=-2>Uppgifterna är hämtade från <A HREF=http://www.systembolaget.se/pris/owa/xall>Systembolagets katalog</A>.</FONT>
+<P><FONT SIZE=-2>Uppgifterna är hämtade från <A HREF=http://www.systembolaget.se/SokDrycker/">Systembolagets katalog</A>.</FONT>
 """)
         self.html_bottom()
         
