@@ -1,3 +1,8 @@
+Thu May 14 08:46:40 1998  Per Cederqvist  <ceder@lysator.liu.se>
+
+	* checksum.py (valid_isbn): The algorithm never accepted ISBN
+	numbers that terminated with a zero.  Fixed.
+
 Sat May  2 23:50:20  Kent Engström  <kent@lysator.liu.se>
 
 	* holidays.py: New file, holiday calculations.
