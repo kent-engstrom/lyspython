@@ -97,6 +97,9 @@ class telkatInfo:
              
             (name, number, address ) = p[0:3]
 
+            if number.find("Tel.") != -1:
+                 number = number[number.find("Tel.")+4:]
+
             name = encodings.codecs.latin_1_decode( name )[0].strip()
             address = encodings.codecs.latin_1_decode( address )[0].strip()
             number = encodings.codecs.latin_1_decode( number )[0].strip()
