@@ -1,3 +1,7 @@
+Sat May  2 21:28:47  Kent Engström  <kent@lysator.liu.se>
+
+	* jddate.py: New file, date conversions.
+
 Sat May  2 20:50:10 1998  Peter Liljenberg  <petli@lysator.liu.se>
 
 	* heap.py: New file, heap class.
