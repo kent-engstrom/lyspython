@@ -1,3 +1,7 @@
+2000-06-16  Per Cederqvist  <ceder@lysator.liu.se>
+
+	* fdselect.py: New file.  This is work in progress.
+
 1999-12-14  Per Cederqvist  <ceder@cendio.se>
 
 	* jdtime.py (Time.__setjd): Fix rouding error.
