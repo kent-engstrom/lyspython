@@ -79,8 +79,10 @@ class FieldSet:
     
     def input_from_sql(self, dict, table = None):
         for k in self.__fields.keys():
-            self.__fields[k].input_from_sql(dict, table)
-
+            if not self.__fields[k].get_option("no_load",0):
+                self.__fields[k].input_from_sql(dict, table)
+            else:
+                self.__fields[k].make_default()
 
     def output_to_sql_insert(self):
         # Manufacture the tail of an SQL "INSERT INTO"
