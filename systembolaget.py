@@ -133,7 +133,7 @@ def klock_argument(s):
 # This is only for debugging, as there is no code to handle GC
 # nor to check for out-of-data information.
 
-WEBPAGE_DEBUG = 1
+WEBPAGE_DEBUG = 0
 
 class WebCache:
     def __init__(self):
@@ -533,7 +533,7 @@ class Container:
         
         MSet([("namn", MS(r'<td bgcolor="#FFFFFF" width="90">(.*?)</td>')),
               ("storlek", MS(r'<td align="Right" bgcolor="#FFFFFF" width="60">(.*?)</td>')),
-              ("pris", MS(r'<td class="text10pxfet" align="Right" bgcolor="#FFFFFF".*?>([0-9.]+)</td>')),
+              ("pris", MS(r'<td class="text10pxfet".*?>([0-9.]+)')),
               ("anm", MSDeH(r'<td align="Center" bgcolor="#FFFFFF">(.*?)</td>')),
               ]).get_into_object(webfragment,self)
         
