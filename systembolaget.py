@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: Latin-1 -*-
 # (C) 2001-2002 Kent Engström. Released under the GNU GPL.
 
 import sys
@@ -126,7 +127,7 @@ class MSC(MS):
 
 class MSVolym(MS):
     def clean(self, data):
-        return re.sub("ml", " ml",
+        return re.sub("[^ ]ml", " ml",
                       string.join(string.split(string.strip(data)), " "))
 
 # Blåfärgade artiklar finns i alla butiker
@@ -386,17 +387,17 @@ class SearchFromWeb(Search):
 
 # ProductSearch class
 
-p_search_m = MSet([("rubrik", MSDeH(r'(?s)<td><font face="TimesNewRoman, Arial, Helvetica, sans-serif" size="5"><b>(.*?)</b>')),
+p_search_m = MSet([("rubrik", MSDeH(r'(?s)<font face="TimesNewRoman, Arial, Helvetica, sans-serif" size="5"><b>([A-ZÅÄÖ].*?)</b>')),
                    ("prodlista",
-                    MList(r'<A HREF="/pris/owa/xdisplay',
+                    MList(r'<A HREF="xdisplay',
                           MSet([("varunr", MS(r'p_varunr=([0-9]+)')),
                                 ("namn", MS('<B>(.*?)</B>')),
-                                ("årgång", MSDeH(r'<font [^>]*?>(.*?)</font>')),
-                                ("varunr2", MS(r'<font [^>]*?>(.*?)</font>')),
+                                ("årgång", MSDeH(r'<font [^>]*?>([0-9]+|&nbsp;)<')),
+                                ("varunr2", MS(r'<font [^>]*?>([0-9]+)<')),
                                 ("land", MS(r'<font [^>]*?>(.*?)</font>')),
                                 ("förplista",
-                                 MList(r'<font face="Arial, Helvetica, sans-serif" size="2">[0-9]+ml</font>',
-                                       MSet([("volym", MSVolym(r'<font [^>]*?>(.*?)</font>')),
+                                 MList(r'<font face="Arial, Helvetica, sans-serif" size="2">[0-9]+ ml',
+                                       MSet([("volym", MSVolym(r'<font [^>]*?>(.*?)<')),
                                              ("allabutiker", MSAllaB(r'<font [^>]*?color="#([0-9A-Fa-f]+)">')),
                                              ("pris", MS(r'([0-9.]+ kr)')),
                                            ]))),
@@ -444,31 +445,59 @@ class ProductSearchFromWeb(ProductSearch):
                  best = 0,
                  begr_butik = None,
                  p_type = None,
-                 p_prop = None,
-                 p_ursprung = None):
+                 p_eko = None,
+                 p_kosher = None,
+                 p_nyhet = None,
+                 p_varutyp = None,
+                 p_ursprung = None,
+                 p_klockor = [0,0,0],
+                 p_fat_k = 0):
         if best:
             ordinarie = "0"
         else:
             ordinarie = "1"
 
         if begr_butik is None:
-            begr_butik = ""
+            begr_butik = "0"
 
         if p_type is None:
             p_type = "0"
 
-        if p_prop is None:
-            p_prop = "0"
+        if p_eko:
+            p_eko = "&p_eko=yes"
+        else:
+            p_eko = ""
+
+        if p_kosher:
+            p_kosher = "&p_kosher=yes"
+        else:
+            p_kosher = ""
+
+        if p_nyhet:
+            p_nyhet = "&p_nyhet=yes"
+        else:
+            p_nyhet = ""
+
+        if p_varutyp is None:
+            p_varutyp = ""
+        else:
+            p_varutyp = urllib.quote(p_varutyp)
 
         if p_ursprung is None:
             p_ursprung = ""
         else:
-            p_ursprung = urllib.quote(string.replace(p_ursprung," ","+"))
+            p_ursprung = urllib.quote(p_ursprung)
+
         grupp = urllib.quote(grupp)
-        url = "http://www.systembolaget.se/pris/owa/xasearch?p_wwwgrp=%s&p_varutyp=&p_ursprung=%s&p_prismin=%s&p_prismax=%s&p_type=%s&p_prop=%s&p_butnr=%s&p_ordinarie=%s&p_rest=0&p_back=" % \
-              (grupp, p_ursprung,
+        url = "http://www.systembolaget.se/pris/owa/sokpipe.sokpara?p_wwwgrp=%s&p_varutyp=%s&p_ursprung=%s&p_prismin=%s&p_prismax=%s&p_type=%s&p_kl_1=%d&p_kl_2=%d&p_kl_3=%d&p_kl_fat=%d%s%s%s&p_butnr=%s&p_ordinarie=%s&p_rest=0&p_back=" % \
+              (grupp, p_varutyp, p_ursprung,
                min_pris, max_pris,
-               p_type, p_prop,
+               p_type,
+               p_klockor[0], p_klockor[1], p_klockor[2], 
+               p_fat_k,
+               p_eko,
+               p_kosher,
+               p_nyhet,
                begr_butik, ordinarie)
 
         u = urllib.urlopen(url)
@@ -533,6 +562,8 @@ class Stores:
     def to_string_butiklista(self, butiker):
         f = cStringIO.StringIO()
         for butik in butiker:
+            if not butik.has_key("ort"):
+                continue
             if self.ort and string.find(string.lower(butik["ort"]),
                                         string.lower(self.ort)) <> 0:
                 continue
@@ -585,8 +616,18 @@ max_pris = 1000000
 begr_butik = None
 grupp = None
 p_type = None
-p_prop = None
+p_eko = 0
+p_kosher = 0
+p_nyhet = 0
+p_varutyp = None
 p_ursprung = None
+p_klockor = [0,0,0]
+pos_fyllighet = None
+pos_stravhet = None
+pos_fruktsyra = None
+pos_sotma = None
+pos_beska = None
+p_fat_k = 0
 
 F_HELP = 0
 F_NAMN = 1
@@ -608,25 +649,45 @@ options, arguments = getopt.getopt(sys.argv[1:],
                                     "bara-butiker",
                                     "län=",
                                     "ort=",
+
                                     "röda-viner",
                                     "vita-viner",
                                     "övriga-viner",
                                     "starkvin",
                                     "sprit",
-                                    "öl-och-cider",
+                                    "öl",
+                                    "cider",
                                     "blanddrycker",
                                     "lättdrycker",
+                                    
                                     "min-pris=",
                                     "max-pris=",
                                     "begränsa-butik=",
-                                    "små-flaskor",
-                                    "stora-flaskor",
+
+                                    "större-flaskor",
+                                    "helflaskor",
+                                    "halvflaskor",
+                                    "mindre-flaskor",
                                     "bag-in-box",
-                                    "papp-förpackning",
-                                    "kosher",
+                                    "pappförpackningar",
+                                    "burkar",
+                                    "stora-burkar",
+
                                     "ekologiskt-odlat",
+                                    "kosher",
                                     "nyheter",
+                                    
+                                    "varutyp=",
                                     "ursprung=",
+
+                                    "fyllighet=",
+                                    "strävhet=",
+                                    "fruktsyra=",
+                                    "sötma=",
+                                    "beska=",
+                                    
+                                    "fat-karaktär",
+                                    "ej-fat-karaktär",
                                     ])
 
 for (opt, optarg) in options:
@@ -662,21 +723,30 @@ for (opt, optarg) in options:
     elif opt == "--röda-viner":
         funktion = F_PRODUKT
         grupp = "RÖDA VINER"
+        (pos_fyllighet, pos_stravhet, pos_fruktsyra) = range(0,3)
     elif opt == "--vita-viner":
         funktion = F_PRODUKT
         grupp = "VITA VINER"
+        (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
     elif opt == "--övriga-viner":
         funktion = F_PRODUKT
         grupp = "ÖVRIGA VINER"
+        (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
     elif opt == "--starkvin":
         funktion = F_PRODUKT
         grupp = "STARKVIN M. M."
     elif opt == "--sprit":
         funktion = F_PRODUKT
         grupp = "SPRIT"
-    elif opt == "--öl-och-cider":
+    elif opt == "--öl":
         funktion = F_PRODUKT
-        grupp = "ÖL & CIDER"
+        grupp = "ÖL"
+        p_sotma_pos = 2
+        (pos_beska, pos_fyllighet, pos_sotma) = range(0,3)
+    elif opt == "--cider":
+        funktion = F_PRODUKT
+        grupp = "CIDER"
+        (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
     elif opt == "--blanddrycker":
         funktion = F_PRODUKT
         grupp = "BLANDDRYCKER"
@@ -689,22 +759,47 @@ for (opt, optarg) in options:
         max_pris = optarg
     elif opt == "--begränsa-butik":
         begr_butik = optarg
-    elif opt == "--små-flaskor":
-        p_type="1"
-    elif opt == "--stora-flaskor":
-        p_type="2"
+    elif opt == "--större-flaskor":
+        p_type = "2"
+    elif opt == "--helflaskor":
+        p_type = "5"
+    elif opt == "--halvflaskor":
+        p_type = "7"
+    elif opt == "--mindre-flaskor":
+        p_type = "1"
     elif opt == "--bag-in-box":
-        p_type="3"
-    elif opt == "--papp-förpackning":
-        p_type="4"
+        p_type = "3"
+    elif opt == "--pappförpackningar":
+        p_type = "4"
+    elif opt == "--burkar":
+        p_type = "6"
+    elif opt == "--stora-burkar":
+        p_type = "9"
     elif opt == "--kosher":
-        p_prop="3"
+        p_kosher = 1
     elif opt == "--ekologiskt-odlat":
-        p_prop="2"
+        p_eko = 1
     elif opt == "--nyheter":
-        p_prop="4"
+        p_nyhet = 1
+    elif opt == "--varutyp":
+        p_varutyp = optarg
     elif opt == "--ursprung":
         p_ursprung = optarg
+    elif opt == "--fyllighet":
+        p_klockor[pos_fyllighet] = int(optarg)
+    elif opt == "--strävhet":
+        p_klockor[pos_stravhet] = int(optarg)
+    elif opt == "--fruktsyra":
+        p_klockor[pos_fruktsyra] = int(optarg)
+    elif opt == "--sötma":
+        p_klockor[pos_sotma] = int(optarg)
+    elif opt == "--beska":
+        p_klockor[pos_beska] = int(optarg)
+        
+    elif opt == "--fat-karaktär":
+        p_fat_k = 1
+    elif opt == "--ej-fat-karaktär":
+        p_fat_k = 2
     else:
         sys.stderr.write("Internt fel (%s ej behandlad)" % opt)
         sys.exit(1)
@@ -754,8 +849,13 @@ elif funktion == F_PRODUKT:
                                  best = best,
                                  begr_butik = begr_butik,
                                  p_type = p_type,
-                                 p_prop = p_prop,
-                                 p_ursprung = p_ursprung)
+                                 p_eko = p_eko,
+                                 p_kosher = p_kosher,
+                                 p_nyhet = p_nyhet,
+                                 p_varutyp = p_varutyp,
+                                 p_ursprung = p_ursprung,
+                                 p_klockor = p_klockor,
+                                 p_fat_k = p_fat_k)
         if s.valid():
             print s.to_string(),
         else:
@@ -787,11 +887,17 @@ else: # F_HELP
    %s   --sprit        | --öl-och-cider |
    %s   --blanddrycker | --lättdrycker }
    %s [--min-pris=MIN] [--max-pris=MAX]
-   %s [{--små-flaskor  | --stora-flaskor |
-   %s   --bag-in-box   | --papp-förpackning}]
-   %s [{--kosher | --ekologiskt-odlat | --nyheter}
-   %s [--ursprung=LAND/REGION]
+   %s [{ --större-flaskor | --mindre-flaskor |
+   %s    --helflaskor     | --halvflaskor |
+   %s    --bag-in-box     | --pappförpackningar |
+   %s    --burkar         | --stora-burkar}]
+   %s [{--ekologiskt-odlat | --kosher | --nyheter}
+   %s [--varutyp=EXAKT-TYP]
+   %s [--ursprung=EXAKT-LAND/REGION]
    %s [--begränsa-butik=BUTIKSKOD]
-""" % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*9)
+   %s [{--fyllighet=N | --strävhet=N | --fruktsyra=N |
+   %s   --sötma=N     | --beska=N}]
+   %s [{--fat-karaktär | --ej-fat-karaktär}]
+""" % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*15)
     
     
