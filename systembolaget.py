@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# (C) 2001-2002 Kent Engström. Released under the GNU GPL.
 
 import sys
 import string

@@ -1,3 +1,5 @@
+# (C) 2001-2002 Kent Engström. Released under the GNU GPL.
+
 import string
 import re
 

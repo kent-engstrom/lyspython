@@ -1,6 +1,6 @@
 #!/usr/bin/env python
+# (C) 2002 Kent Engström. Released under the GNU GPL.
 
-# TODO: Check modules
 import sys
 import re
 import cStringIO
