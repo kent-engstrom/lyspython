@@ -2,71 +2,54 @@
 #
 # Code provided for personal instructional purposes only. No warranty.
 # Please respect the copyright law.
+# Requires Python 1.6 or above
 
-import urllib,socket,sys,regex,os
+import urllib
+import os
+import jddate
+import re
 
-# Configuration
+class dilberterror(Exception): pass
 
-server="www.unitedmedia.com:80"
-server2="umweb1.unitedmedia.com:80"
-indexurl="http://"+server+"/comics/dilbert/archive/"
+def fetch_many_dilberts():
+    d = jddate.FromToday()
+    while 1:
+        filename = "%s.gif" % d.GetString_YYYYMMDD()
+        if os.path.exists(filename):
+            print filename, "already present"
+        else:
+            try:
+                fetch_dilbert(d, filename)
+            except dilberterror:
+                print "-- not a GIF file, aborting"
+                return
+        d = d - 1
 
-# Connect and get archive index page
+def fetch_dilbert(date, filename):
+    page_url = "http://www.dilbert.com/comics/dilbert/archive/dilbert-%s.html" % date.GetString_YYYYMMDD()
+    print page_url
+    u = urllib.urlopen(page_url)
+    html = u.read()
+    u.close()
 
-print "- fetching main page"
-f=urllib.urlopen(indexurl)
-index=f.read()
-f.close()
-
-# Search archive index page for references to html files for days
-
-pos=0
-dates=[]
-rx=regex.compile("archive/dilbert\([0-9]+\)\.html")
-
-while pos<>-1:
-    pos=rx.search(index,pos+1)
-    if pos<>-1:
-	dates.append(rx.group(1))
-
-# Now see  if we need to download any of them
-
-rx=regex.compile("archive/images/dilbert\([0-9]+\)\.gif")
-
-for date in dates:
-    filename="dilbert-%s.gif"%date
-    htmlurl="http://"+server2+"/comics/dilbert/archive/dilbert%s.html"%date
-    try:
-	lf=open(filename,"r")
-	lf.close()
-	print "%s: present, skipping."%filename
-	skip=1
-    except:
-	skip=0
-    if skip: continue
-
-    f=urllib.urlopen(htmlurl)
-    html=f.read()
-    f.close()
-
-    if rx.search(html)==-1:
-	print "%s: no image reference found"%filename
-	continue
-
-    (rnd)=rx.group(1)
-
-    picurl="http://"+server2+"/comics/dilbert/archive/images/dilbert%s.gif"%(rnd)
-
-    print "%s: fetching"%filename
-
-    f=urllib.urlopen(picurl)
-    picture=f.read(100000)
-    # Calling with no argument seens to cause truncation in 1.5.1
+    m = re.search(r"archive/images/dilbert([0-9]+).gif", html)
+    secret = m.group(1)
+    pic_url = "http://www.dilbert.com/comics/dilbert/archive/images/dilbert" + secret + ".gif"
+    print pic_url
     
+    u = urllib.urlopen(pic_url)
+    pic = u.read()
+    u.close()
+    if not pic.startswith("GIF"): raise dilberterror
+    
+    f = open(filename, "wb")
+    f.write(pic)
     f.close()
+    print "-- done"
+    print
+    
+    
 
-    f=open(filename,"wb")
-    f.write(picture)
-    f.close()
-
-    print "%s: fetched"%filename
+if __name__ == '__main__':
+    fetch_many_dilberts()
+    
