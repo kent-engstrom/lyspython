@@ -1,4 +1,4 @@
-2003-01-19  Kent Engstrom  <kent@astrea.hack.org>
+2003-01-19  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py: Refactor a lot of internal stuff to make
 	the central classes cleaner, in preparation for new features.
@@ -14,9 +14,14 @@
 	to recursively to a product search and display the same data
 	as that would have given.
 
+        Use "#!/usr/bin/env python2" to signal the need for Python 2.
+
+	* systembolaget.cgi: Adapt to changes in systembolaget.py.
+	Use "#!/usr/bin/env python2" to signal the need for Python 2.
+
 	* regexpmatcher.py: Add a "quick" get metod to relevant classes
 	(implemented using the GetMixin mixin class).
-
+	
 2003-01-14  Kent Engstrom  <kent@astrea.hack.org>
 
 	* systembolaget.py: Add new classes WebCache and WebPage to enable
