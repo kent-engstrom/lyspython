@@ -1,7 +1,7 @@
 2001-04-26  Kent Engstrom  <kent@persefone.hack.org>
 
 	* systembolaget.py: Better regexp matcher. Better search result
-	listing.
+	listing. Use getopt. More ways to search.
 
 2001-04-09  Kent Engström  <kent@lysator.liu.se>
 
