@@ -1,3 +1,8 @@
+1999-11-16  Per Cederqvist  <ceder@paragon.cendio.se>
+
+	* jdtime.py: New file.  This implements the same things as jddate,
+	but with added support for hours, minutes and seconds.
+
 1998-11-12    <kent@artemis.signum.se>
 
 	* jddate.py (FromUnixTime): new function.
