@@ -152,7 +152,7 @@ prod_m = MSet([("grupp", MS(r"<tr><td width=144> </td><td>\n(.+)\n")),
                              MSet([("namn", MS(r"<td>&#149; ([^<]+)</td>")),
                                    ("storlek", MS(r"<td align=right>([^<]+)</td>")),
                                    ("pris", MS(r"<td align=right>([^<]+)</td>")),
-                                   ("anm1", MS(r"<td>([^<]+)</td>")),
+                                   ("anm1", MSDeH(r"<td>(.*?)</td>")),
                                    ("anm2", MSDeH(r"<td>(.+?)</td>")),
                                    ])))), 
                ("färg",MSF("Färg")),
@@ -378,7 +378,7 @@ class SearchFromWeb(Search):
             soundex = "1"
         else:
             soundex = "0"
-        url = "http://www.systembolaget.se/pris/owa/zname?p_namn=%s&p_wwwgrptxt=%%25&p_soundex=%s&p_ordinarie=%s" % (urllib.quote(key), soundex, ordinarie)
+        url = "http://www.systembolaget.se/pris/owa/zname?p_namn=%s&p_wwwgrptxt=%%25&p_rest=0&p_soundex=%s&p_ordinarie=%s" % (urllib.quote(key), soundex, ordinarie)
         u = urllib.urlopen(url)
         webpage = u.read()
         Search.__init__(self, webpage)
