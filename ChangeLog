@@ -1,3 +1,11 @@
+2002-02-28  Pontus Skold  <Pontus.Skold@dis.uu.se>
+
+	* riktnr.txt: New file. (Hopefully) All areacodes in Sweden. Used
+	by telkat.py.
+
+	* telkat.py: New file. Framework for querying the web version
+	of the swedish white pages offered by Eniro.
+
 2002-01-31  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py: Add hyperlinks and data source to HTML page.
