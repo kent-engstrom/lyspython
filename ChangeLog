@@ -1,3 +1,8 @@
+2002-08-08  Kent Engström  <kent@ceres.unit.liu.se>
+
+	* systembolaget.py: Adapt to format changes on the
+	Systembolaget site. Patch provided by Pontus Sköld.
+
 2002-06-07  Erik Forsberg  <forsberg@lysator.liu.se>
 	* lookupstudent.py: Fix bug that made usernames look ugly if they
 	contained non-ASCII characters. Check if programcode and/or

@@ -141,14 +141,14 @@ class MSAllaB(MS):
 # Product class
 
 prod_m = MSet([("grupp", MS(r"<tr><td width=144> </td><td>\n(.+)\n")),
-               ("namn", MS(r"<B>([^(]+)\(nr [^)]*\)")),
+               ("namn", MS(r"<b>([^(]+)\(nr [^)]*\)")),
                ("varunr", MS(r"\(nr ([^)]*)\)")),
                ("ursprung",MSF("Ursprung")),
                ("producent",MSF("Producent")),
                ("förpackningar",
-                MLimit(r'(?s)<td><table border=1><tr><td><table border=0>(.*?)</table></td></tr></table>',
+                MLimit(r'(?s)<td><table border="0" cellspacing="3">(.*?)</table></td></tr>',
                        MList("<tr>",
-                             MSet([("namn", MS(r"<td>([^<]+)</td>")),
+                             MSet([("namn", MS(r"<td>&#149; ([^<]+)</td>")),
                                    ("storlek", MS(r"<td align=right>([^<]+)</td>")),
                                    ("pris", MS(r"<td align=right>([^<]+)</td>")),
                                    ("anm1", MS(r"<td>([^<]+)</td>")),
