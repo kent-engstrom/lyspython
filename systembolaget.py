@@ -101,13 +101,6 @@ def add_to_list(list, data, fun = None):
             data = fun(data)
         list.append(data)
 
-def add_to_list_attribute(list, obj, attribute, fun = None):
-    if obj.__dict__.has_key(attribute):
-        data = obj.__dict__[attribute]
-        if fun:
-            data = fun(data)
-        list.append(data)
-
 def move_year_to_front(name):
     m = re.match(".*([12][90][0-9][0-9])$", name)
     if m:
@@ -248,7 +241,7 @@ class Product:
         m.get_into_object(webpage, self)
         #for k,v in self.__dict__.items(): print "%-16s = %s" % (k,v)
         
-        if self.__dict__.has_key("namn") and self.__dict__.has_key("varunr"):
+        if self.namn and self.varunr:
             self.state = VALID
         else:
             self.state = INVALID
