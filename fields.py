@@ -279,6 +279,14 @@ class OnetimeField(TextField):
             return TextField.convert_to_tag(self)
         else:
             return "<input type=\"text\" length=\"16\" name=\"%s\" value=\"%s\">" % (self._name, TextField.convert_to_tag(self))
+
+    def convert_from_form(self, value):
+        # Override the TextField converter so we don't try to validate
+        # the field when it has already been set.
+        if self._options.get("no_input", 0):
+            return ("", None)
+        else:
+            return TextField.convert_from_form(self, value)
         
 class IntField(Field):
     def __init__(self, name, **options):
