@@ -1,3 +1,7 @@
+Sat May  2 23:50:20  Kent Engström  <kent@lysator.liu.se>
+
+	* holidays.py: New file, holiday calculations.
+	
 Sat May  2 22:11:09  Kent Engström  <kent@lysator.liu.se>
 
 	* dilbert-fetch.py: New file, comics retrieval.
