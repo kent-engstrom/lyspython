@@ -1,4 +1,7 @@
-#!/local/pkg/python1.5/bin/python
+#!/usr/bin/env python
+#
+# Code provided for personal instructional purposes only. No warranty.
+# Please respect the copyright law.
 
 import urllib,socket,sys,regex,os
 
