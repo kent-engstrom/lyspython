@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: Latin-1 -*-
 # (C) 2001-2003 Kent Engström. Released under the GNU GPL.
 
