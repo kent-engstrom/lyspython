@@ -156,6 +156,7 @@ prod_m = MSet([("grupp", MS(r"<tr><td width=144> </td><td>\n(.+)\n")),
                ("beska",MSC("Beska", advance = 0)),
                ("användning",MSF("Användning")),
                ("hållbarhet",MSF("Hållbarhet")),
+               ("druvsorter",MSF("Druvsorter")),
                ("provad_årgång",MSF("Provad årgång")),
                ("provningsdatum",MSF("Provningsdatum")),
                ("alkoholhalt",MS("<B>Alkoholhalt</B></td>\n<td valign=top>(.*)</td></tr>")),
@@ -207,6 +208,7 @@ class Product:
         add_field(f, self.dict, "Grupp","grupp")
         add_field(f, self.dict, "Ursprung","ursprung")
         add_field(f, self.dict, "Producent","producent")
+        add_field(f, self.dict, "Druvsorter","druvsorter")
         f.write("\n")
         add_field(f, self.dict, "Färg","färg")
         add_field(f, self.dict, "Doft","doft")
@@ -273,6 +275,9 @@ class Product:
                  self.typical_price()))
 
         f.write("<TR><TD>%s<BR>\n" % self.dict["ursprung"])
+        try:
+            f.write("%s<BR>\n" % self.dict["druvsorter"])
+        except KeyError: pass
         f.write("%s</TD>\n" % string.replace(self.dict["alkoholhalt"], "volymprocent", "%"))
 
         f.write("<TD>%s</TD></TR>\n" % self.clock_table())
@@ -300,8 +305,8 @@ class ProductFromWeb(Product):
 # Search class
 
 search_m = MSet([("typlista",
-                  MList("<H2>",
-                        MSet([("typrubrik", MSDeH(r'<H2>(.*?) *</H2>')),
+                  MList(r'<tr><td><font face="TimesNewRoman, Arial, Helvetica, sans-serif" size="5">',
+                        MSet([("typrubrik", MSDeH(r'<b>(.*?) *</b>')),
                               ("prodlista",
                                MList(r'<tr valign=top><td bgcolor="#[0-9a-fA-F]+" width=320>',
                                      MSet([("varunr", MS(r'p_varunr=([0-9]+)')),
@@ -366,7 +371,7 @@ class SearchFromWeb(Search):
 
 # ProductSearch class
 
-p_search_m = MSet([("rubrik", MSDeH(r'(?s)<H2>(.*?)</H2>')),
+p_search_m = MSet([("rubrik", MSDeH(r'(?s)<td><font face="TimesNewRoman, Arial, Helvetica, sans-serif" size="5"><b>(.*?)</b>')),
                    ("prodlista",
                     MList(r'<A HREF="/pris/owa/xdisplay',
                           MSet([("varunr", MS(r'p_varunr=([0-9]+)')),

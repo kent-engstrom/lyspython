@@ -1,3 +1,10 @@
+2002-04-30  Kent Engström  <kent@lysator.liu.se>
+
+	* systembolaget.py: Adapt to more format changes on the
+	Systembolaget site: New markup for headings and the addition of
+	grape information.
+	
+
 2002-04-17  Kent Engström  <kent@lysatorliu.se>
 
 	* systembolaget.py: Change the regular expressions a bit to
