@@ -66,6 +66,12 @@ class kombug:
 	sys.stdout.flush()
 
     def parse(self, str, res):
+	"""Parse calls from STR and append them to RES.
+
+	RES is a list of strings.  STR is a string.  Any unparsed data
+	are returned.  That happens if an incomplete call exists in STR.
+	"""
+
 	linestart=0
 	state=0
 	i=0
