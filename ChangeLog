@@ -1,3 +1,9 @@
+2003-01-06  Kent Engström  <kent@lysator.liu.se>
+
+	* systembolaget.cgi: New program to produce wine lists in HTML.	
+	* systembolaget.py: Adapt for systembolaget.cgi. Encapsulate command
+	line functions in the "main" function, to enable importing as a module.
+
 2003-01-05  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py: Add option "--bara-varunr" to

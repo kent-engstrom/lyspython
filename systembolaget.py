@@ -275,7 +275,8 @@ class Product:
         f.write("      %s\n" % string.join(lf, ", "))
         return f.getvalue()
 
-    def to_string_html(self):
+    def to_string_html(self,
+                       include_sensory=1):
         f = cStringIO.StringIO()
         f.write('<TR><TD COLSPAN=2><B>%s (nr <a href=%s>%s</a>) %s</B></TD></TR>\n' % \
                 (self.dict["namn"],
@@ -291,11 +292,12 @@ class Product:
 
         f.write("<TD>%s</TD></TR>\n" % self.clock_table())
 
-        f.write("<TR><TD COLSPAN=2><UL>\n")
-        for rubrik in ["färg","doft","smak"]:
-            if self.dict.has_key(rubrik):
-                f.write("<LI>%s" % (self.dict[rubrik]))
-        f.write("</UL></TD></TR>\n")
+        if include_sensory:
+            f.write("<TR><TD COLSPAN=2><UL>\n")
+            for rubrik in ["färg","doft","smak"]:
+                if self.dict.has_key(rubrik):
+                    f.write("<LI>%s" % (self.dict[rubrik]))
+            f.write("</UL></TD></TR>\n")
         
         f.write("<TR><TD COLSPAN=2>&nbsp;</TD></TR>\n")
 
@@ -305,7 +307,7 @@ class Product:
 
 class ProductFromWeb(Product):
     def __init__(self, prodno):
-        self.url = varu_url(prodno)
+        self.url = varu_url(str(prodno))
         u = urllib.urlopen(self.url)
         webpage = u.read()
         Product.__init__(self, webpage)
@@ -611,313 +613,316 @@ def do_html(nr_lista):
     print "</BODY>"
     
 
-# MAIN
-
-# Option handling
-
-debug = 0
-best = 0
-soundex = 0
-kort = 0
-butiker = 0
-barabutiker = 0
-baravarunr = 0
-lan = "99"
-ort = None
-min_pris = 0
-max_pris = 1000000
-begr_butik = None
-grupp = None
-p_type = None
-p_eko = 0
-p_kosher = 0
-p_nyhet = 0
-p_varutyp = None
-p_ursprung = None
-p_klockor = [0,0,0]
-pos_fyllighet = None
-pos_stravhet = None
-pos_fruktsyra = None
-pos_sotma = None
-pos_beska = None
-p_fat_k = 0
-
-F_HELP = 0
-F_NAMN = 1
-F_PRODUKT = 2
-F_VARA = 3
-F_HTML = 4
-
-funktion = F_HELP
-
-options, arguments = getopt.getopt(sys.argv[1:],
-                                   "",
-                                   ["debug",
-                                    "namn=",
-                                    "html=",
-                                    "beställningssortimentet",
-                                    "soundex",
-                                    "kort",
-                                    "butiker",
-                                    "bara-butiker",
-                                    "län=",
-                                    "ort=",
-
-                                    "röda-viner",
-                                    "vita-viner",
-                                    "övriga-viner",
-                                    "starkvin",
-                                    "sprit",
-                                    "öl",
-                                    "cider",
-                                    "blanddrycker",
-                                    "lättdrycker",
-                                    
-                                    "min-pris=",
-                                    "max-pris=",
-                                    "begränsa-butik=",
-
-                                    "större-flaskor",
-                                    "helflaskor",
-                                    "halvflaskor",
-                                    "mindre-flaskor",
-                                    "bag-in-box",
-                                    "pappförpackningar",
-                                    "burkar",
-                                    "stora-burkar",
-
-                                    "ekologiskt-odlat",
-                                    "kosher",
-                                    "nyheter",
-                                    
-                                    "varutyp=",
-                                    "ursprung=",
-
-                                    "fyllighet=",
-                                    "strävhet=",
-                                    "fruktsyra=",
-                                    "sötma=",
-                                    "beska=",
-                                    
-                                    "fat-karaktär",
-                                    "ej-fat-karaktär",
-
-                                    "bara-varunr",
-                                    ])
-
-for (opt, optarg) in options:
-    if opt == "--debug":
-        debug = 1
-    elif opt == "--namn":
-        funktion = F_NAMN
-        namn = optarg
-    elif opt == "--html":
-        funktion = F_HTML
-        nr_lista = optarg
-    elif opt == "--beställningssortimentet":
-        best = 1
-    elif opt == "--soundex":
-        soundex = 1
-    elif opt == "--kort":
-        kort = 1
-    elif opt == "--butiker":
-        butiker = 1
-    elif opt == "--bara-butiker":
-        butiker = 1
-        barabutiker = 1
-    elif opt == "--län":
-        butiker = 1
-        kanske_lan = find_lan(optarg)
-        if kanske_lan is not None:
-            lan = kanske_lan
-        else:
-            sys.stderr.write("[Län '%s' ej funnet --- ingen länsbegränsning.]\n" % optarg)
-    elif opt == "--ort":
-        butiker = 1
-        ort = optarg
-    elif opt == "--röda-viner":
-        funktion = F_PRODUKT
-        grupp = "RÖDA VINER"
-        (pos_fyllighet, pos_stravhet, pos_fruktsyra) = range(0,3)
-    elif opt == "--vita-viner":
-        funktion = F_PRODUKT
-        grupp = "VITA VINER"
-        (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
-    elif opt == "--övriga-viner":
-        funktion = F_PRODUKT
-        grupp = "ÖVRIGA VINER"
-        (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
-    elif opt == "--starkvin":
-        funktion = F_PRODUKT
-        grupp = "STARKVIN M. M."
-    elif opt == "--sprit":
-        funktion = F_PRODUKT
-        grupp = "SPRIT"
-    elif opt == "--öl":
-        funktion = F_PRODUKT
-        grupp = "ÖL"
-        p_sotma_pos = 2
-        (pos_beska, pos_fyllighet, pos_sotma) = range(0,3)
-    elif opt == "--cider":
-        funktion = F_PRODUKT
-        grupp = "CIDER"
-        (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
-    elif opt == "--blanddrycker":
-        funktion = F_PRODUKT
-        grupp = "BLANDDRYCKER"
-    elif opt == "--lättdrycker":
-        funktion = F_PRODUKT
-        grupp = "LÄTTDRYCKER"
-    elif opt == "--min-pris":
-        min_pris = optarg
-    elif opt == "--max-pris":
-        max_pris = optarg
-    elif opt == "--begränsa-butik":
-        begr_butik = optarg
-    elif opt == "--större-flaskor":
-        p_type = "2"
-    elif opt == "--helflaskor":
-        p_type = "5"
-    elif opt == "--halvflaskor":
-        p_type = "7"
-    elif opt == "--mindre-flaskor":
-        p_type = "1"
-    elif opt == "--bag-in-box":
-        p_type = "3"
-    elif opt == "--pappförpackningar":
-        p_type = "4"
-    elif opt == "--burkar":
-        p_type = "6"
-    elif opt == "--stora-burkar":
-        p_type = "9"
-    elif opt == "--kosher":
-        p_kosher = 1
-    elif opt == "--ekologiskt-odlat":
-        p_eko = 1
-    elif opt == "--nyheter":
-        p_nyhet = 1
-    elif opt == "--varutyp":
-        p_varutyp = optarg
-    elif opt == "--ursprung":
-        p_ursprung = optarg
-    elif opt == "--fyllighet":
-        p_klockor[pos_fyllighet] = int(optarg)
-    elif opt == "--strävhet":
-        p_klockor[pos_stravhet] = int(optarg)
-    elif opt == "--fruktsyra":
-        p_klockor[pos_fruktsyra] = int(optarg)
-    elif opt == "--sötma":
-        p_klockor[pos_sotma] = int(optarg)
-    elif opt == "--beska":
-        p_klockor[pos_beska] = int(optarg)
-        
-    elif opt == "--fat-karaktär":
-        p_fat_k = 1
-    elif opt == "--ej-fat-karaktär":
-        p_fat_k = 2
-    elif opt == "--bara-varunr":
-        baravarunr = 1
-    else:
-        sys.stderr.write("Internt fel (%s ej behandlad)" % opt)
-        sys.exit(1)
-
-if funktion == F_HELP and len(arguments) > 0:
-    funktion = F_VARA
-
-if funktion == F_VARA:
-    # Varufunktion
-    for varunr in arguments:
-        prod = ProductFromWeb(varunr)
-        if not barabutiker:
-            if prod.valid():
-                if kort:
-                    txt = prod.to_string_brief()
-                else:
-                    txt = prod.to_string()
-                print txt
-            else:
-                print "Varunummer %s verkar inte finnas." % varunr
-                continue
-        
-        if butiker:
-            stores = StoresFromWeb(varunr, lan, ort)
-            if stores.valid():
-                print stores.to_string(show_heading = barabutiker)
-            else:
-                print "Inga butiker med vara %s funna." % varunr
-            
-elif funktion == F_HTML:
-    # HTML-lista
-    do_html(string.split(nr_lista,","))
-           
-elif funktion == F_NAMN:
-    # Namnsökning
-        s = SearchFromWeb(namn, best, soundex)
-        if s.valid():
-            print s.to_string(baravarunr = baravarunr),
-        else:
-            print "Sökningen gav inga svar."
-
-elif funktion == F_PRODUKT:
-    # Produktsökning
-        s = ProductSearchFromWeb(grupp,
-                                 min_pris = min_pris,
-                                 max_pris = max_pris,
-                                 best = best,
-                                 begr_butik = begr_butik,
-                                 p_type = p_type,
-                                 p_eko = p_eko,
-                                 p_kosher = p_kosher,
-                                 p_nyhet = p_nyhet,
-                                 p_varutyp = p_varutyp,
-                                 p_ursprung = p_ursprung,
-                                 p_klockor = p_klockor,
-                                 p_fat_k = p_fat_k,
-                                 )
-        if s.valid():
-            print s.to_string(baravarunr = baravarunr),
-        else:
-            print "Sökningen gav inga svar."
-
-else: # F_HELP
-    print "systembolaget.py --- kommandoradssökning i Systembolagets katalog"
-    print "-----------------------------------------------------------------"
-    print 
-    print "Varuvisning (med möjlighet att visa butiker som har varan):"
-    print """
-   %s [--kort] [--butiker] [--bara-butiker]
-   %s [--län=LÄN] [--ort=ORT]
-   %s VARUNR...
-""" % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*2)
-    print "Varuvisning i HTML-format:"
-    print """
-   %s --html VARUNR,VARUNR,...
-""" % ((sys.argv[0],))
-    print "Namnsökning:"
-    print """
-   %s [--beställningssortimentet] [--soundex]
-   %s [--bara-varunr]
-   %s  --namn=NAMN
-""" % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*2)
-    print "Produktsökning:"
-    print """
-   %s { --röda-viner   | --vita-viner   |
-   %s   --övriga-viner | --starkvin     |
-   %s   --sprit        | --öl-och-cider |
-   %s   --blanddrycker | --lättdrycker }
-   %s [--min-pris=MIN] [--max-pris=MAX]
-   %s [{ --större-flaskor | --mindre-flaskor |
-   %s    --helflaskor     | --halvflaskor |
-   %s    --bag-in-box     | --pappförpackningar |
-   %s    --burkar         | --stora-burkar}]
-   %s [{--ekologiskt-odlat | --kosher | --nyheter}
-   %s [--varutyp=EXAKT-TYP]
-   %s [--ursprung=EXAKT-LAND/REGION]
-   %s [--begränsa-butik=BUTIKSKOD]
-   %s [{--fyllighet=N | --strävhet=N | --fruktsyra=N |
-   %s   --sötma=N     | --beska=N}]
-   %s [{--fat-karaktär | --ej-fat-karaktär}]
-   %s [--bara-varunr]
-""" % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*16)
+# COMMAND LINE OPERATION
+def main():
+    # Option handling
     
+    debug = 0
+    best = 0
+    soundex = 0
+    kort = 0
+    butiker = 0
+    barabutiker = 0
+    baravarunr = 0
+    lan = "99"
+    ort = None
+    min_pris = 0
+    max_pris = 1000000
+    begr_butik = None
+    grupp = None
+    p_type = None
+    p_eko = 0
+    p_kosher = 0
+    p_nyhet = 0
+    p_varutyp = None
+    p_ursprung = None
+    p_klockor = [0,0,0]
+    pos_fyllighet = None
+    pos_stravhet = None
+    pos_fruktsyra = None
+    pos_sotma = None
+    pos_beska = None
+    p_fat_k = 0
+    
+    F_HELP = 0
+    F_NAMN = 1
+    F_PRODUKT = 2
+    F_VARA = 3
+    F_HTML = 4
+    
+    funktion = F_HELP
+    
+    options, arguments = getopt.getopt(sys.argv[1:],
+                                       "",
+                                       ["debug",
+                                        "namn=",
+                                        "html=",
+                                        "beställningssortimentet",
+                                        "soundex",
+                                        "kort",
+                                        "butiker",
+                                        "bara-butiker",
+                                        "län=",
+                                        "ort=",
+    
+                                        "röda-viner",
+                                        "vita-viner",
+                                        "övriga-viner",
+                                        "starkvin",
+                                        "sprit",
+                                        "öl",
+                                        "cider",
+                                        "blanddrycker",
+                                        "lättdrycker",
+                                        
+                                        "min-pris=",
+                                        "max-pris=",
+                                        "begränsa-butik=",
+    
+                                        "större-flaskor",
+                                        "helflaskor",
+                                        "halvflaskor",
+                                        "mindre-flaskor",
+                                        "bag-in-box",
+                                        "pappförpackningar",
+                                        "burkar",
+                                        "stora-burkar",
+    
+                                        "ekologiskt-odlat",
+                                        "kosher",
+                                        "nyheter",
+                                        
+                                        "varutyp=",
+                                        "ursprung=",
+    
+                                        "fyllighet=",
+                                        "strävhet=",
+                                        "fruktsyra=",
+                                        "sötma=",
+                                        "beska=",
+                                        
+                                        "fat-karaktär",
+                                        "ej-fat-karaktär",
+    
+                                        "bara-varunr",
+                                        ])
+    
+    for (opt, optarg) in options:
+        if opt == "--debug":
+            debug = 1
+        elif opt == "--namn":
+            funktion = F_NAMN
+            namn = optarg
+        elif opt == "--html":
+            funktion = F_HTML
+            nr_lista = optarg
+        elif opt == "--beställningssortimentet":
+            best = 1
+        elif opt == "--soundex":
+            soundex = 1
+        elif opt == "--kort":
+            kort = 1
+        elif opt == "--butiker":
+            butiker = 1
+        elif opt == "--bara-butiker":
+            butiker = 1
+            barabutiker = 1
+        elif opt == "--län":
+            butiker = 1
+            kanske_lan = find_lan(optarg)
+            if kanske_lan is not None:
+                lan = kanske_lan
+            else:
+                sys.stderr.write("[Län '%s' ej funnet --- ingen länsbegränsning.]\n" % optarg)
+        elif opt == "--ort":
+            butiker = 1
+            ort = optarg
+        elif opt == "--röda-viner":
+            funktion = F_PRODUKT
+            grupp = "RÖDA VINER"
+            (pos_fyllighet, pos_stravhet, pos_fruktsyra) = range(0,3)
+        elif opt == "--vita-viner":
+            funktion = F_PRODUKT
+            grupp = "VITA VINER"
+            (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
+        elif opt == "--övriga-viner":
+            funktion = F_PRODUKT
+            grupp = "ÖVRIGA VINER"
+            (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
+        elif opt == "--starkvin":
+            funktion = F_PRODUKT
+            grupp = "STARKVIN M. M."
+        elif opt == "--sprit":
+            funktion = F_PRODUKT
+            grupp = "SPRIT"
+        elif opt == "--öl":
+            funktion = F_PRODUKT
+            grupp = "ÖL"
+            p_sotma_pos = 2
+            (pos_beska, pos_fyllighet, pos_sotma) = range(0,3)
+        elif opt == "--cider":
+            funktion = F_PRODUKT
+            grupp = "CIDER"
+            (pos_sotma, pos_fyllighet, pos_fruktsyra) = range(0,3)
+        elif opt == "--blanddrycker":
+            funktion = F_PRODUKT
+            grupp = "BLANDDRYCKER"
+        elif opt == "--lättdrycker":
+            funktion = F_PRODUKT
+            grupp = "LÄTTDRYCKER"
+        elif opt == "--min-pris":
+            min_pris = optarg
+        elif opt == "--max-pris":
+            max_pris = optarg
+        elif opt == "--begränsa-butik":
+            begr_butik = optarg
+        elif opt == "--större-flaskor":
+            p_type = "2"
+        elif opt == "--helflaskor":
+            p_type = "5"
+        elif opt == "--halvflaskor":
+            p_type = "7"
+        elif opt == "--mindre-flaskor":
+            p_type = "1"
+        elif opt == "--bag-in-box":
+            p_type = "3"
+        elif opt == "--pappförpackningar":
+            p_type = "4"
+        elif opt == "--burkar":
+            p_type = "6"
+        elif opt == "--stora-burkar":
+            p_type = "9"
+        elif opt == "--kosher":
+            p_kosher = 1
+        elif opt == "--ekologiskt-odlat":
+            p_eko = 1
+        elif opt == "--nyheter":
+            p_nyhet = 1
+        elif opt == "--varutyp":
+            p_varutyp = optarg
+        elif opt == "--ursprung":
+            p_ursprung = optarg
+        elif opt == "--fyllighet":
+            p_klockor[pos_fyllighet] = int(optarg)
+        elif opt == "--strävhet":
+            p_klockor[pos_stravhet] = int(optarg)
+        elif opt == "--fruktsyra":
+            p_klockor[pos_fruktsyra] = int(optarg)
+        elif opt == "--sötma":
+            p_klockor[pos_sotma] = int(optarg)
+        elif opt == "--beska":
+            p_klockor[pos_beska] = int(optarg)
+            
+        elif opt == "--fat-karaktär":
+            p_fat_k = 1
+        elif opt == "--ej-fat-karaktär":
+            p_fat_k = 2
+        elif opt == "--bara-varunr":
+            baravarunr = 1
+        else:
+            sys.stderr.write("Internt fel (%s ej behandlad)" % opt)
+            sys.exit(1)
+    
+    if funktion == F_HELP and len(arguments) > 0:
+        funktion = F_VARA
+    
+    if funktion == F_VARA:
+        # Varufunktion
+        for varunr in arguments:
+            prod = ProductFromWeb(varunr)
+            if not barabutiker:
+                if prod.valid():
+                    if kort:
+                        txt = prod.to_string_brief()
+                    else:
+                        txt = prod.to_string()
+                    print txt
+                else:
+                    print "Varunummer %s verkar inte finnas." % varunr
+                    continue
+            
+            if butiker:
+                stores = StoresFromWeb(varunr, lan, ort)
+                if stores.valid():
+                    print stores.to_string(show_heading = barabutiker)
+                else:
+                    print "Inga butiker med vara %s funna." % varunr
+                
+    elif funktion == F_HTML:
+        # HTML-lista
+        do_html(string.split(nr_lista,","))
+               
+    elif funktion == F_NAMN:
+        # Namnsökning
+            s = SearchFromWeb(namn, best, soundex)
+            if s.valid():
+                print s.to_string(baravarunr = baravarunr),
+            else:
+                print "Sökningen gav inga svar."
+    
+    elif funktion == F_PRODUKT:
+        # Produktsökning
+            s = ProductSearchFromWeb(grupp,
+                                     min_pris = min_pris,
+                                     max_pris = max_pris,
+                                     best = best,
+                                     begr_butik = begr_butik,
+                                     p_type = p_type,
+                                     p_eko = p_eko,
+                                     p_kosher = p_kosher,
+                                     p_nyhet = p_nyhet,
+                                     p_varutyp = p_varutyp,
+                                     p_ursprung = p_ursprung,
+                                     p_klockor = p_klockor,
+                                     p_fat_k = p_fat_k,
+                                     )
+            if s.valid():
+                print s.to_string(baravarunr = baravarunr),
+            else:
+                print "Sökningen gav inga svar."
+    
+    else: # F_HELP
+        print "systembolaget.py --- kommandoradssökning i Systembolagets katalog"
+        print "-----------------------------------------------------------------"
+        print 
+        print "Varuvisning (med möjlighet att visa butiker som har varan):"
+        print """
+       %s [--kort] [--butiker] [--bara-butiker]
+       %s [--län=LÄN] [--ort=ORT]
+       %s VARUNR...
+    """ % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*2)
+        print "Varuvisning i HTML-format:"
+        print """
+       %s --html VARUNR,VARUNR,...
+    """ % ((sys.argv[0],))
+        print "Namnsökning:"
+        print """
+       %s [--beställningssortimentet] [--soundex]
+       %s [--bara-varunr]
+       %s  --namn=NAMN
+    """ % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*2)
+        print "Produktsökning:"
+        print """
+       %s { --röda-viner   | --vita-viner   |
+       %s   --övriga-viner | --starkvin     |
+       %s   --sprit        | --öl-och-cider |
+       %s   --blanddrycker | --lättdrycker }
+       %s [--min-pris=MIN] [--max-pris=MAX]
+       %s [{ --större-flaskor | --mindre-flaskor |
+       %s    --helflaskor     | --halvflaskor |
+       %s    --bag-in-box     | --pappförpackningar |
+       %s    --burkar         | --stora-burkar}]
+       %s [{--ekologiskt-odlat | --kosher | --nyheter}
+       %s [--varutyp=EXAKT-TYP]
+       %s [--ursprung=EXAKT-LAND/REGION]
+       %s [--begränsa-butik=BUTIKSKOD]
+       %s [{--fyllighet=N | --strävhet=N | --fruktsyra=N |
+       %s   --sötma=N     | --beska=N}]
+       %s [{--fat-karaktär | --ej-fat-karaktär}]
+       %s [--bara-varunr]
+    """ % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*16)
+
+
+if __name__ == '__main__':
+    main()
     
