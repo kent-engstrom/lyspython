@@ -1,3 +1,7 @@
+2001-05-05  Kent Engström  <kent@lysator.liu.se>
+
+	* systembolaget.py: Option --kort for brief product information.
+
 2001-04-26  Kent Engstrom  <kent@persefone.hack.org>
 
 	* systembolaget.py: Better regexp matcher. Better search result

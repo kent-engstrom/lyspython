@@ -84,6 +84,18 @@ def add_field(f, dict, title, key):
     if dict.has_key(key):
         f.write(format_titled(title, dict[key]))
 
+def add_to_list_from_dict(list, dict, key, fun = None):
+    if dict.has_key(key):
+        data = dict[key]
+        if fun:
+            data = fun(data)
+        list.append(data)
+
+def move_year_to_front(name):
+    m = re.match(".*([12][90][0-9][0-9])$", name)
+    if m:
+        name = m.group(1) + " " + string.strip(name[:-4])
+    return name
 
 def findall_pos(pattern, data, s_pos, e_pos):
     # Find the position of the beginning of each match; search for next match after the
@@ -289,6 +301,30 @@ class Product:
         f.write("\n")
         f.write(format_titled("URL", self.url))
 
+        return f.getvalue()
+
+    def to_string_brief(self):
+        f = cStringIO.StringIO()
+        f.write("%s [%s]\n" %(move_year_to_front(self.dict["namn"]),
+                              self.dict["varunr"]))
+        lf = []
+        add_to_list_from_dict(lf, self.dict, "ursprung")
+        add_to_list_from_dict(lf, self.dict, "producent")
+        add_to_list_from_dict(lf, self.dict, "provad_årgång")
+        add_to_list_from_dict(lf, self.dict, "hållbarhet")
+        f.write("      %s\n" % string.join(lf, ", "))
+        lf = []
+        for egenskap in ["sötma","fyllighet","strävhet","fruktsyra","beska"]:
+            kod = string.capitalize(egenskap)[:2]+":"
+            add_to_list_from_dict(lf, self.dict, egenskap,
+                                  lambda x, kod = kod: kod + x)
+        add_to_list_from_dict(lf, self.dict, "alkoholhalt",
+                              lambda x: string.replace(x, " volymprocent", "%"))
+            
+        for f_dict in self.dict["förpackningar"]:
+            lf.append("%s/%s" % (f_dict.get("pris"),
+                                 f_dict.get("storlek")))
+        f.write("      %s\n" % string.join(lf, ", "))
         return f.getvalue()
 
 class ProductFromWeb(Product):
@@ -507,18 +543,12 @@ class StoresFromWeb(Stores):
 
 # MAIN
 
-#debug = 0
-#s = ProductSearchFromWeb(grupp="VITA VINER", min_pris=1000)
-#data = open("xasearch").read()
-#s = ProductSearch(data)
-#print s.to_string()
-#sys.exit(0)
-
 # Option handling
 
 debug = 0
 best = 0
 soundex = 0
+kort = 0
 butiker = 0
 barabutiker = 0
 lan = "99"
@@ -539,6 +569,7 @@ options, arguments = getopt.getopt(sys.argv[1:],
                                     "namn=",
                                     "beställningssortimentet",
                                     "soundex",
+                                    "kort",
                                     "butiker",
                                     "bara-butiker",
                                     "län=",
@@ -565,6 +596,8 @@ for (opt, optarg) in options:
         best = 1
     elif opt == "--soundex":
         soundex = 1
+    elif opt == "--kort":
+        kort = 1
     elif opt == "--butiker":
         butiker = 1
     elif opt == "--bara-butiker":
@@ -619,7 +652,11 @@ if funktion == F_VARA:
         prod = ProductFromWeb(varunr)
         if not barabutiker:
             if prod.valid():
-                print prod.to_string()
+                if kort:
+                    txt = prod.to_string_brief()
+                else:
+                    txt = prod.to_string()
+                print txt
             else:
                 print "Varunummer %s verkar inte finnas." % varunr
                 continue
@@ -656,9 +693,10 @@ else: # F_HELP
     print 
     print "Varuvisning (med möjlighet att visa butiker som har varan):"
     print """
-   %s [--butiker] [--bara-butiker]
-   %s [--län=LÄN] [--ort=ORT] VARUNR...
-""" % (sys.argv[0], " " * len(sys.argv[0]))
+   %s [--kort] [--butiker] [--bara-butiker]
+   %s [--län=LÄN] [--ort=ORT]
+   %s VARUNR...
+""" % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*2)
     print "Namnsökning:"
     print """
    %s [--beställningssortimentet] [--soundex]
