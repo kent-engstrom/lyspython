@@ -1,3 +1,7 @@
+2004-11-03  Kent Engström  <kent@ceres.unit.liu.se>
+
+	* systembolaget.py (Container.from_html_normal): Adapt to changes.
+
 2004-10-15  Kent Engström  <kent@unit.liu.se>
 
 	* systembolaget.py: Adapted to changes to the site.
