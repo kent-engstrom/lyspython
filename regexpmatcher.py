@@ -120,10 +120,16 @@ class MSet(GetMixin):
                 print "Looking for",name,"between",s_pos,"and",e_pos
                 print "--> %s" % data[s_pos:min(s_pos+110,e_pos)]
             (found, s_pos) = m.match(data, s_pos, e_pos)
-            if found: # Subtle: empty dict or list is also false!
-                dict[name] = found
+            dict[name] = found # False objects are also stored!
         return (dict, s_pos)
 
+    def get_into_object(self, data, object, s_pos=0, e_pos=None):
+        """Match a set of patterns. Set attributes in the object's__dict__."""
+
+        (res, pos) = self.match(data, s_pos, e_pos)
+        for (k,v) in res.items():
+            object.__dict__[k] = v
+            
 # Class matching a list of data, producing a list
 
 class MList(GetMixin):
