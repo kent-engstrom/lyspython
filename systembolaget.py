@@ -110,7 +110,9 @@ def findall_pos(pattern, data, s_pos, e_pos):
             pos = m.end(0)
         else:
             return l
-        
+
+def left_zero_pad(str, minsize):
+    return ("0"*minsize + str)[-minsize:]
 
 # Classes matching a single piece of data
 
@@ -511,15 +513,19 @@ class ProductSearchFromWeb(ProductSearch):
                  typ = None,
                  ursprung = None,
                  min_pris = 0, max_pris = 1000000,
-                 best = 0):
+                 best = 0,
+                 begr_butik = None):
         if best:
             ordinarie = "0"
         else:
             ordinarie = "1"
 
+        if begr_butik is None:
+            begr_butik = ""
+
         grupp = urllib.quote(grupp)
-        url = "http://www.systembolaget.se/pris/owa/xasearch?p_wwwgrp=%s&p_varutyp=&p_ursprung=&p_prismin=%s&p_prismax=%s&p_type=0&p_prop=0&p_butnr=&p_ordinarie=%s&p_rest=0&p_back=" % \
-              (grupp, min_pris, max_pris, ordinarie)
+        url = "http://www.systembolaget.se/pris/owa/xasearch?p_wwwgrp=%s&p_varutyp=&p_ursprung=&p_prismin=%s&p_prismax=%s&p_type=0&p_prop=0&p_butnr=%s&p_ordinarie=%s&p_rest=0&p_back=" % \
+              (grupp, min_pris, max_pris, begr_butik, ordinarie)
 
         u = urllib.urlopen(url)
         webpage = u.read()
@@ -529,7 +535,8 @@ class ProductSearchFromWeb(ProductSearch):
 # Stores class
 
 stores_butikslista = MList(r'<tr><td width="200" valign=top>',
-                           MSet([("ort", MS(r'<a [^>]*>(.*?)</a>')),
+                           MSet([("kod", MS(r'thebut=([0-9]+)')),
+                                 ("ort", MS(r'>(.*?)</a>')),
                                  ("adress", MS(r'<td[^>]*>(.*?)</td>')),
                                  ("telefon", MS(r'<td[^>]*>(.*?)</td>')),
                                  ]))
@@ -571,9 +578,11 @@ class Stores:
             f.write(self.to_string_butiklista(self.dict["butikslista"]))
         else:
             for lan in self.dict["länslista"]:
-                f.write(lan["län"] + "\n\n")
-                f.write(self.to_string_butiklista(lan["butikslista"]))
-                f.write("\n")
+                butikslista = self.to_string_butiklista(lan["butikslista"])
+                if butikslista:
+                    f.write(lan["län"] + "\n\n")
+                    f.write(butikslista)
+                    f.write("\n")
 
         return f.getvalue()
 
@@ -583,9 +592,11 @@ class Stores:
             if self.ort and string.find(string.lower(butik["ort"]),
                                         string.lower(self.ort)) <> 0:
                 continue
-            f.write("  %s, %s (%s)\n" % (butik["ort"],
-                                         butik["adress"],
-                                         butik["telefon"]))
+            f.write("  %s, %s (%s) [kod %s]\n" % \
+                    (butik["ort"],
+                     butik["adress"],
+                     butik["telefon"],
+                     left_zero_pad(butik["kod"],4)))
         return f.getvalue()
 
 class StoresFromWeb(Stores):
@@ -626,6 +637,7 @@ lan = "99"
 ort = None
 min_pris = 0
 max_pris = 1000000
+begr_butik = None
 grupp = None
 
 F_HELP = 0
@@ -658,6 +670,7 @@ options, arguments = getopt.getopt(sys.argv[1:],
                                     "lättdrycker",
                                     "min-pris=",
                                     "max-pris=",
+                                    "begränsa-butik=",
                                     ])
 
 for (opt, optarg) in options:
@@ -681,12 +694,14 @@ for (opt, optarg) in options:
         butiker = 1
         barabutiker = 1
     elif opt == "--län":
+        butiker = 1
         kanske_lan = find_lan(optarg)
         if kanske_lan is not None:
             lan = kanske_lan
         else:
             sys.stderr.write("[Län '%s' ej funnet --- ingen länsbegränsning.]\n" % optarg)
     elif opt == "--ort":
+        butiker = 1
         ort = optarg
     elif opt == "--röda-viner":
         funktion = F_PRODUKT
@@ -716,6 +731,8 @@ for (opt, optarg) in options:
         min_pris = optarg
     elif opt == "--max-pris":
         max_pris = optarg
+    elif opt == "--begränsa-butik":
+        begr_butik = optarg
     else:
         sys.stderr.write("Internt fel (%s ej behandlad)" % opt)
         sys.exit(1)
@@ -762,7 +779,8 @@ elif funktion == F_PRODUKT:
         s = ProductSearchFromWeb(grupp,
                                  min_pris = min_pris,
                                  max_pris = max_pris,
-                                 best = best)
+                                 best = best,
+                                 begr_butik = begr_butik)
         if s.valid():
             print s.to_string(),
         else:
@@ -793,7 +811,8 @@ else: # F_HELP
    %s   --övriga-viner | --starkvin     |
    %s   --sprit        | --öl-och-cider |
    %s   --blanddrycker | --lättdrycker }
-   %s [--min-pris=MIN] [--max-pris=MAX] 
-""" % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*4)
+   %s [--min-pris=MIN] [--max-pris=MAX]
+   %s [--begränsa-butik=BUTIKSKOD]
+""" % ((sys.argv[0],) + (" " * len(sys.argv[0]),)*5)
     
     

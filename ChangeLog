@@ -1,3 +1,9 @@
+2001-11-25  Kent Engstrom  <kent@lysator.liu.se>
+
+	* systembolaget.py: Add --begränsa-butik option. Show the store
+	code when listing stores. Let --län or --ort imply --butiker. Do
+	not show empty "län" headings when using --ort.
+
 2001-11-05  Kent Engström  <kent@ceres.unit.liu.se>
 
 	* systembolaget.py: Add --html option.
