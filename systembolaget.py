@@ -339,6 +339,9 @@ class Product:
             if vald is None or c.storlek in normala:
                 vald = c
 
+        if vald is None:
+            return "(pris saknas)"
+        
         pris = string.replace(string.replace(string.replace(vald.pris,
                                                             ".", ":"),
                                              ":00", ":-"),

@@ -1,3 +1,8 @@
+2003-08-25  Kent Engström  <kent@lysator.liu.se>
+
+	* systembolaget.py (Product.typical_price): Don't fail when
+	no price at all is found.
+
 2003-07-02  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py: Adapt to recent (?) changes at the site: format changes to the
