@@ -267,6 +267,12 @@ class TextField(Field):
 
     def convert_to_sql(self):
         return "'"+db.escape(str(self._value))+"'"
+
+class HTMLField(TextField):
+    def convert_to_tag(self):
+        return self._value
+            
+            
     
 class IntField(Field):
     def __init__(self, name, **options):
