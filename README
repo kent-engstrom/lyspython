@@ -1,0 +1,20 @@
+This is lyspython, which is a central repository of miscellaneous
+Python code written by members of Lysator who want to share their
+code.
+
+If you are a member of Lysator and want to contribute, simply do this:
+
+	export CVSROOT=/lysator/cvsroot
+	cvs co lyspython
+	cd lyspython
+	# hack away
+	cvs add newfile.py
+	cvs ci -m"added a new cool file" newfile.py
+
+These files are copyrighted by their authors.  By contributing the
+files to this CVS module the author allows members of Lysator to use
+this code for any private non-commercial legal use.  Authors are
+encouraged to explicitly state their licensing conditions in the
+file.
+
+Authors are encouraged to use the ChangeLog file.
