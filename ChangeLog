@@ -1,3 +1,8 @@
+2001-04-26  Kent Engstrom  <kent@persefone.hack.org>
+
+	* systembolaget.py: Better regexp matcher. Better search result
+	listing.
+
 2001-04-09  Kent Engström  <kent@lysator.liu.se>
 
 	* systembolaget.py: New file. Searching the Systembolaget catalog :-)

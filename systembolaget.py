@@ -42,29 +42,46 @@ def format_titled_fixed(title, text_lines, title_size = 16, max_col = 78):
         left = ""
     return string.join(res, "")
     
+def add_field(f, dict, title, key):
+    if dict.has_key(key):
+        f.write(format_titled(title, dict[key]))
 
-# Generic matcher class
 
-class Matcher:
-    def __init__(self, name, pattern, advance=1):
-        self.name = name
+def findall_pos(pattern, data, s_pos, e_pos):
+    # Find the position of the beginning of each match; search for next match after the
+    # end of the current
+    l = []
+    pos = s_pos
+    patre = re.compile(pattern)
+    while 1:
+        m = patre.search(data, pos, e_pos)
+        if m:
+            l.append(m.start(0))
+            pos = m.end(0)
+        else:
+            return l
+        
+
+# Classes matching a single piece of data
+
+class M:
+    def __init__(self, pattern, advance=1):
         self.pattern = self.elaborate_pattern(pattern)
         self.re = re.compile(self.pattern)
         self.advance = advance
-        self.data = None
         
-    def match(self, data, start_pos):
-        m = self.re.search(data, start_pos)
+    def match(self, data, s_pos, e_pos):
+        m = self.re.search(data, s_pos, e_pos)
         if m:
-            #print "Found", self.name, "=", m.group(1)
-            self.data = self.clean(m.group(1))
+            #print "Found", m.group(1)
+            data = self.clean(m.group(1))
             if self.advance:
-                return m.end(0)
+                return (data, m.end(0))
             else:
-                return start_pos
+                return (data, s_pos)
         else:
-            #print "NOT FOUND", self.name
-            return start_pos
+            #print "Not found"
+            return (None, s_pos)
 
     def clean(self, data):
         return data
@@ -72,202 +89,222 @@ class Matcher:
     def elaborate_pattern(self, pattern):
         return pattern
 
-class StripMatcher(Matcher):
+class MS(M):
     def clean(self, data):
         return string.join(string.split(string.strip(data)), " ")
 
-class TFMatcher(StripMatcher):
+class MSF(MS):
     def elaborate_pattern(self, pattern):
         return r"<B>%s</B></td>\n<td valign=top>(.*)</td></tr>" % pattern
 
-class ClockMatcher(StripMatcher):
-    pass
+class MSC(MS):
+    def elaborate_pattern(self, pattern):
+        return r'<td width=70><center><img src="/bilder/klock_([0-9]+).gif"\n><br> *%s *</center></td>' % pattern
 
-class DeHTMLMatcher(StripMatcher):
+
+class MSDeH(MS):
     def clean(self, data):
-        return re.sub("<.*?>", "",
+        return re.sub("&nbsp;", " ",
+                      re.sub("<.*?>", "",
+                             string.join(string.split(string.strip(data)), " ")))
+
+class MSVolym(MS):
+    def clean(self, data):
+        return re.sub("ml", " ml",
                       string.join(string.split(string.strip(data)), " "))
 
 
-class ContainerMatcher(Matcher):
-    def __init__(self, name, pattern, advance=1):
-        Matcher.__init__(self, name, pattern, advance)
+# Class matching a set of data, producing a dictionary
 
-    def clean(self, data):
-        res = []
-        while 1:
-            c = Container(data)
-            if not c.valid(): break
-            res.append(c)
-            data = c.remaining_data()
-        return res
-
-class SearchMatcher(Matcher):
-    def __init__(self, name, pattern, advance=1):
-        Matcher.__init__(self, name, pattern, advance)
-
-    def clean(self, data):
-        res = []
-        while 1:
-            c = SearchLine(data)
-            if not c.valid(): break
-            res.append(c)
-            data = c.remaining_data()
-        return res
-
-    
-# Generic MatchSet
-
-class MatchSet:
-    def __init__(self, data):
-        self.data = data
-        self.matchers = []
-        self.dict = {}
-        self.pos = 0
+class MSet:
+    def __init__(self, matchers):
+        self.matchers = matchers
         
-    def match(self):
+    def match(self, data, s_pos, e_pos):
         # Execution
-        for matcher in self.matchers:
-            self.pos = matcher.match(self.data, self.pos)
-            if matcher.data is not None:
-                self.dict[matcher.name] = matcher.data
+        dict = {}
+        for (name, m) in self.matchers:
+            #print "Looking for",name,"between",s_pos,"and",e_pos
+            #print "--> %s" % data[s_pos:s_pos+40]
+            (found, s_pos) = m.match(data, s_pos, e_pos)
+            if found: # Subtle: empty dict or list is also false!
+                dict[name] = found
+        return (dict, s_pos)
 
-    def remaining_data(self):
-        return self.data[self.pos:]
+# Class matching a list of data, producing a list
 
-    def add_field(self, f, title, key):
-        if self.dict.has_key(key):
-            f.write(format_titled(title, self.dict[key]))
+class MList:
+    def __init__(self, begin, matcher):
+        self.begin = begin
+        self.matcher = matcher
+        
+    def match(self, data, s_pos, e_pos):
+        # Execution
+        list = []
+        pos = findall_pos(self.begin, data, s_pos, e_pos) + [e_pos]
+        #print "Positions for", self.begin,":", pos
+        for i in range(0,len(pos)-1):
+            #print "Looking for list entry between",pos[i],"and",pos[i+1]
+            (found, dummy_pos) = self.matcher.match(data, pos[i], pos[i+1])
+            list.append(found)
+        return (list, e_pos)
+
+# Class narrowing the allowable search range without doing matching on its own
+
+class MLimit:
+    def __init__(self, pattern, matcher):
+        self.pattern = pattern
+        self.re = re.compile(self.pattern)
+        self.matcher = matcher
+        
+    def match(self, data, s_pos, e_pos):
+        #print "Before limit", s_pos,"to", e_pos
+        #print "--> %s" % data[s_pos:s_pos+60]
+        
+        m = self.re.search(data, s_pos, e_pos)
+        if m:
+            (s_pos, e_pos) = m.span(1)
+            #print "After limit", s_pos,"to", e_pos
+            #print "--> %s" % data[s_pos:s_pos+40]
+            return self.matcher.match(data, s_pos, e_pos)
+        else:
+            #print "Limit failed"
+            return (None, s_pos) # or should we call the matcher with empty data?
+    
+# Product class
+
+prod_m = MSet([("grupp", MS(r"<tr><td width=144> </td><td>\n(.+)\n")),
+               ("namn", MS(r"<B>([^(]+)\(nr [^)]*\)")),
+               ("ursprung",MSF("Ursprung")),
+               ("producent",MSF("Producent")),
+               ("förpackningar",
+                MLimit(r'(?s)<td><table border=1><tr><td><table border=0>(.*?)</table></td></tr></table>',
+                       MList("<tr>",
+                             MSet([("namn", MS(r"<td>([^<]+)</td>")),
+                                   ("storlek", MS(r"<td align=right>([^<]+)</td>")),
+                                   ("pris", MS(r"<td align=right>([^<]+)</td>")),
+                                   ("anm1", MS(r"<td>([^<]+)</td>")),
+                                   ("anm2", MSDeH(r"<td>(.+?)</td>")),
+                                   ])))), 
+               ("färg",MSF("Färg")),
+               ("doft",MSF("Doft")),
+               ("smak",MSF("Smak")),
+               ("sötma",MSC("Sötma", advance = 0)),
+               ("fyllighet",MSC("Fyllighet", advance = 0)),
+               ("strävhet",MSC("Strävhet", advance = 0)),
+               ("fruktsyra",MSC("Fruktsyra", advance = 0)),
+               ("beska",MSC("Beska", advance = 0)),
+               ("användning",MSF("Användning")),
+               ("hållbarhet",MSF("Hållbarhet")),
+               ("provad_årgång",MSF("Provad årgång")),
+               ("provningsdatum",MSF("Provningsdatum")),
+               ("alkoholhalt",MS("<B>Alkoholhalt</B></td>\n<td valign=top>(.*\n.*)</td></tr>")),
+               ])    
+
+class Product:
+    def __init__(self, webpage):
+        (self.dict, pos) = prod_m.match(webpage, 0, len(webpage))
 
     def valid(self):
-        return len(self.dict) > 0
-
-# Product class
+        return self.dict.has_key("namn")
     
-class Product(MatchSet):
-    def __init__(self, webpage):
-        MatchSet.__init__(self, webpage)
-        # Definition
-        self.matchers = [
-            StripMatcher("grupp", r"<tr><td width=144> </td><td>\n(.+)\n"),
-            StripMatcher("namn", r"<B>([^(]+)\(nr [^)]*\)"),
-            TFMatcher("ursprung", "Ursprung"),
-            TFMatcher("producent", "Producent"),
-            ContainerMatcher("förpackningar", "(?s)<td><table border=1><tr><td><table border=0>(.*)</table></td></tr></table>"),
-            TFMatcher("färg", "Färg"),
-            TFMatcher("doft", "Doft"),
-            TFMatcher("smak", "Smak"),
-            ClockMatcher("sötma", r'<td width=70><center><img src="/bilder/klock_([0-9]+).gif"\n><br> *Sötma *</center></td>', advance = 0),
-            ClockMatcher("fyllighet", r'<td width=70><center><img src="/bilder/klock_([0-9]+).gif"\n><br> *Fyllighet *</center></td>', advance = 0),
-            ClockMatcher("strävhet", r'<td width=70><center><img src="/bilder/klock_([0-9]+).gif"\n><br> *Strävhet *</center></td>', advance = 0),
-            ClockMatcher("fruktsyra", r'<td width=70><center><img src="/bilder/klock_([0-9]+).gif"\n><br> *Fruktsyra *</center></td>', advance = 0),
-            ClockMatcher("beska", r'<td width=70><center><img src="/bilder/klock_([0-9]+).gif"\n><br> *Beska *</center></td>', advance = 0),
-            TFMatcher("användning", "Användning"),
-            TFMatcher("hållbarhet", "Hållbarhet"),
-            TFMatcher("provad_årgång", "Provad årgång"),
-            TFMatcher("provningsdatum", "Provningsdatum"),
-            StripMatcher("alkoholhalt", "<B>Alkoholhalt</B></td>\n<td valign=top>(.*\n.*)</td></tr>"),
-            ]
-        self.match()
-
     def to_string(self):
         f = cStringIO.StringIO()
-        self.add_field(f,"Grupp","grupp")
-        self.add_field(f,"Namn","namn")
-        self.add_field(f,"Ursprung","ursprung")
-        self.add_field(f,"Producent","producent")
+        add_field(f, self.dict, "Grupp","grupp")
+        add_field(f, self.dict, "Namn","namn")
+        add_field(f, self.dict, "Ursprung","ursprung")
+        add_field(f, self.dict, "Producent","producent")
         f.write("\n")
-        self.add_field(f,"Färg","färg")
-        self.add_field(f,"Doft","doft")
-        self.add_field(f,"Smak","smak")
+        add_field(f, self.dict, "Färg","färg")
+        add_field(f, self.dict, "Doft","doft")
+        add_field(f, self.dict, "Smak","smak")
         f.write("\n")
-        self.add_field(f,"Sötma","sötma")
-        self.add_field(f,"Fyllighet","fyllighet")
-        self.add_field(f,"Strävhet","strävhet")
-        self.add_field(f,"Fruktsyra","fruktsyra")
-        self.add_field(f,"Beska","beska")
+        add_field(f, self.dict, "Sötma","sötma")
+        add_field(f, self.dict, "Fyllighet","fyllighet")
+        add_field(f, self.dict, "Strävhet","strävhet")
+        add_field(f, self.dict, "Fruktsyra","fruktsyra")
+        add_field(f, self.dict, "Beska","beska")
         f.write("\n")
-        self.add_field(f,"Användning","användning")
-        self.add_field(f,"Hållbarhet","hållbarhet")
-        self.add_field(f,"Provad årgång","provad_årgång")
-        self.add_field(f,"Provad","provningsdatum")
-        self.add_field(f,"Alkoholhalt","alkoholhalt")
+        add_field(f, self.dict, "Användning","användning")
+        add_field(f, self.dict, "Hållbarhet","hållbarhet")
+        add_field(f, self.dict, "Provad årgång","provad_årgång")
+        add_field(f, self.dict, "Provad","provningsdatum")
+        add_field(f, self.dict, "Alkoholhalt","alkoholhalt")
         f.write("\n")
-        f.write(format_titled_fixed("Förpackningar",
-                                    map(lambda x: x.to_string(),
-                                        self.dict["förpackningar"])))
-            
+
+        f_lines = []
+        for f_dict in self.dict["förpackningar"]:
+            f_lines.append("%-18s %7s %7s %s %s" % (
+                f_dict.get("namn"),
+                f_dict.get("storlek"),
+                f_dict.get("pris"),
+                f_dict.get("anm1", ""),
+                f_dict.get("anm2", "")))
+
+        f.write(format_titled_fixed("Förpackningar", f_lines))
+        f.write("\n")
+        f.write(format_titled("URL", self.url))
+
         return f.getvalue()
-
-    def valid(self):
-        # Should at least contain name to be valid
-        return self.dict.has_key("namn") and self.dict["namn"] <> ""
-
-class Container(MatchSet):
-    def __init__(self, data):
-        MatchSet.__init__(self, data)
-        # Definition
-        self.matchers = [
-            StripMatcher("namn", r"<td>([^<]+)</td>"),
-            StripMatcher("storlek", r"<td align=right>([^<]+)</td>"),
-            StripMatcher("pris", r"<td align=right>([^<]+)</td>"),
-            StripMatcher("anm1", r"<td>([^<]+)</td>"),
-            DeHTMLMatcher("anm2", r"<td>(.+?)</td>"),
-            ]
-
-        self.match()
-
-    def to_string(self):
-        return "%-15s %7s %7s %s %s" % (
-            self.dict.get("namn"),
-            self.dict.get("storlek"),
-            self.dict.get("pris"),
-            self.dict.get("anm1"),
-            self.dict.get("anm2"))
 
 class ProductFromWeb(Product):
     def __init__(self, prodno):
-        url = "http://www.systembolaget.se/pris/owa/xdisplay?p_varunr=" + \
-              prodno
-        u = urllib.urlopen(url)
+        self.url = "http://www.systembolaget.se/pris/owa/xdisplay?p_varunr=" + \
+                   prodno
+        u = urllib.urlopen(self.url)
         webpage = u.read()
         Product.__init__(self, webpage)
 
 
-class Search(MatchSet):
+# Search class
+
+search_m = MSet([("typlista",
+                  MList("<H2>",
+                        MSet([("typrubrik", MSDeH(r'<H2>(.*?) *</H2>')),
+                              ("prodlista",
+                               MList(r'<tr valign=top><td bgcolor="#.*?" width=320>',
+                                     MSet([("varunr", MS(r'p_varunr=([0-9]+)')),
+                                           ("namn", MS('<B>(.*?)</B>')),
+                                           ("årgång", MSDeH(r'<font [^>]*?>(.*?)</font>')),
+                                           ("varunr2", MS(r'<font [^>]*?>(.*?)</font>')),
+                                           ("land", MS(r'<font [^>]*?>(.*?)</font>')),
+                                           ("förplista",
+                                            MList(r'<font [^>]*?>[0-9]+ml</font>',
+                                                  MSet([("volym", MSVolym(r'<font [^>]*?>(.*?)</font>')),
+                                                        ("pris", MS(r'<font [^>]*?>(.*?)</font>')),
+                                                        ]))),
+                                           ]))),
+                              ]))),
+                 ("antal", MS(r"Din sökning gav ([0-9]+) träffar.")),
+                 ])
+
+class Search:
     def __init__(self, webpage):
-        MatchSet.__init__(self, webpage)
-        # Definition
-        self.matchers = [
-            SearchMatcher("resultat", r"(?s)Kr / liter.*?\n.*?\n(.*)\nDin sökning"),
-            ]
-        self.match()
-        
+        (self.dict, pos) = search_m.match(webpage, 0, len(webpage))
+
+    def valid(self):
+        return self.dict.has_key("typlista")
+    
     def to_string(self):
         f = cStringIO.StringIO()
-        if self.valid():
-            for sl in self.dict["resultat"]:
-                f.write(sl.to_string() + "\n")
-                
+        for typ in self.dict["typlista"]:
+            f.write(typ["typrubrik"] + "\n\n")
+            for vara in typ["prodlista"]:
+                f.write("%7s  %s\n" % (vara["varunr"],
+                                       vara["namn"]))
+                fps = []
+                for forp in vara["förplista"]:
+                    fps.append("%11s (%s)" % (forp["pris"], forp["volym"]))
+                #fps_txt = string.join(fps, ", ")
+                f.write("         %4s %-32s %s\n" % (vara["årgång"],
+                                               vara["land"],
+                                               fps[0]))
+                for fp in fps[1:]:
+                    f.write("                                               %s\n" % fp)
+                    
+                f.write("\n")
+            f.write("\n")
         return f.getvalue()
-
-        
-class SearchLine(MatchSet):
-    def __init__(self, data):
-        MatchSet.__init__(self, data)
-        # Definition
-        self.matchers = [
-            StripMatcher("varunr", r'<tr valign=top><td bgcolor="#[0-9a-f]+" width=320>\n<tr valign=top><td bgcolor="#[0-9a-f]+" width=275><font face="Arial, Helvetica, sans-serif" size="2">\n<A HREF="/pris/owa/xdisplay\?p_varunr=([0-9]+)'),
-            StripMatcher("namn", r"<B>(.*?)</B>"),
-            ]
-
-        self.match()
-
-    def to_string(self):
-        return "%-8s %s" % (
-            self.dict.get("varunr"),
-            self.dict.get("namn"))
-
 
 class SearchFromWeb(Search):
     def __init__(self, key, best = 0):
@@ -279,7 +316,6 @@ class SearchFromWeb(Search):
         u = urllib.urlopen(url)
         webpage = u.read()
         Search.__init__(self, webpage)
-
 
 # MAIN
 
@@ -294,7 +330,7 @@ for arg in sys.argv[1:]:
     if re.match("^[0-9]+$", arg):
         prod = ProductFromWeb(arg)
         if prod.valid():
-            print prod.to_string()
+            print prod.to_string(),
         else:
             print "Varunummer %s verkar inte finnas." % arg
     else:
@@ -305,4 +341,7 @@ for arg in sys.argv[1:]:
             best = 0
             key = arg            
         s = SearchFromWeb(key, best)
-        print s.to_string()
+        if s.valid():
+            print s.to_string(),
+        else:
+            print "Sökningen gav inga svar."
