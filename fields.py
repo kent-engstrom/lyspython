@@ -59,6 +59,9 @@ class FieldSet:
                 all_ok = 0
         return all_ok
 
+    def get_error(self, key):
+        return self.__fields[key].get_error()
+        
     def get_errors(self):
         errors = []
         for k in self.__fields.keys():
@@ -97,7 +100,8 @@ class FieldSet:
         col_list = self.__fields.keys()
         asn_list = []
         for k in col_list:
-            asn_list.append("%s=%s" % (k,self.__fields[k].convert_to_sql()))
+            if not self.__fields[k].get_option("no_update",0):
+                asn_list.append("%s=%s" % (k,self.__fields[k].convert_to_sql()))
         return string.join(asn_list,",")
 
 #
@@ -125,6 +129,9 @@ class Field:
         
     def set_option(self, option, value):
         self._options[option] = value
+        
+    def get_option(self, option, default = None):
+        return self._options.get(option, default)
         
     def get_name(self):
         return self._name
@@ -169,6 +176,12 @@ class Field:
 
         self._error = None
         name = prefix + self._name
+        if self._options.get("no_input",0):
+            # We should not input from the form to this field,
+            # but we set it to avoid trouble with leaking data
+            self._value = self._default
+            return self._error
+        
         if form.has_key(name):
             entry = form[name]
             if type(entry) == type([]):
@@ -214,19 +227,39 @@ class TextField(Field):
         
     def convert_to_tag(self):
         # FIXME: Perhaps apply option "upcase" on output too
-        return cgi.escape(self._value)
+        val = self._value
+
+        # Option empty: a certain value should be translated into an empty field
+        empty = self._options.get("empty", None)
+        if empty and val == empty:
+            val = ""
+        return cgi.escape(val)
     
     def convert_from_form(self, value):
         # No multiple values here
         str = value[0]
-        if self._options.get("not_empty",0):
-            if str == "":
-                return (None,"får ej vara tomt")
 
+        # User provided checker has precedence.
+        input_checker = self._options.get("input_checker",None)
+        if input_checker:
+            return input_checker(str)
+
+        # Option empty: an empty field should be translated into a certain value
+        # N.B. You must do this yourself if you provide an input_checker above
+        empty = self._options.get("empty", None)
+        if empty:
+            if str == "":
+                str = empty
+            elif self._options.get("not_empty",0):
+                # Option not_empty only check if option empty is not present
+                if str == "":
+                    return (None,"får ej vara tomt")
+
+        # UPPER CASE
         if self._options.get("upcase",0):
-            return (string.upper(str), None)
-        else:
-            return (str, None)
+            str = string.upper(str)
+        
+        return (str, None)
 
     def convert_to_sql(self):
         return "'"+db.escape(str(self._value))+"'"
@@ -317,6 +350,13 @@ class BoolField(Field):
     def input_from_form(self, form, prefix):
         self._error = None
         name = prefix + self._name
+        
+        if self._options.get("no_input",0):
+            # We should not input from the form to this field,
+            # but we set it to avoid trouble with leaking data
+            self._value = self._default
+            return self._error
+        
         if form.has_key(name):
             self._form_value = [form[name].value]
             self._value = 1
@@ -367,21 +407,31 @@ class ChoiceField(Field):
 
         # Make list of possible choices
         choices = self.get_choices()
-        
-        # Loop over choices, outputing OPTIONS.
-        # Make the ones present in the value selected
-        
-        res = []
-        for alt in choices: 
-            (tag, text) = self.convert_alt_to_tag_text(alt)
 
-            res.append(self.generate_option(tag, text, tag in value_list))
-
-        # FIXME: What are we to do with parts of the value that are not
-        # present in the options list? Currently, we ignore them!
-
-        # Return text
-        return string.join(res, "\n")
+        # If the option output_as_text is set, we should
+        # output text instead.
+        if self._options.get("output_as_text", 0):
+            res = []
+            for alt in choices:
+                (tag, text) = self.convert_alt_to_tag_text(alt)
+                if tag in value_list:
+                    res.append(text)
+            return string.join(res, ", ")
+        else:
+            # Loop over choices, outputing OPTIONS.
+            # Make the ones present in the value selected
+            
+            res = []
+            for alt in choices: 
+                (tag, text) = self.convert_alt_to_tag_text(alt)
+    
+                res.append(self.generate_option(tag, text, tag in value_list))
+    
+            # FIXME: What are we to do with parts of the value that are not
+            # present in the options list? Currently, we ignore them!
+    
+            # Return text
+            return string.join(res, "\n")
 
     def generate_option(self, tag, text, selected):
         # Override to generate options differently!
@@ -467,6 +517,12 @@ class CheckChoiceField(ChoiceField):
         self._error = None
         self._value = []
         
+        if self._options.get("no_input",0):
+            # We should not input from the form to this field,
+            # but we set it to avoid trouble with leaking data
+            self._value = self._default
+            return self._error
+        
         for alt in self.get_choices(): 
             (tag, text) = self.convert_alt_to_tag_text(alt)
             cbname = cgi.escape(prefix + self._name + "_" + tag)
@@ -475,8 +531,3 @@ class CheckChoiceField(ChoiceField):
 
         return self._error
     
-# TODO: option or class to output ChoiceField as a number of checkboxes
-# Needed for nybil
-
-# TODO: option "nosql" or "nodb", to switch off reading/writing to SQL
-
