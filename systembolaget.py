@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-# -*- coding: Latin-1 -*-
+# -*- coding: latin-1 -*-
 # (C) 2001-2003 Kent Engström. Released under the GNU GPL.
 
 import sys
@@ -133,7 +133,7 @@ def klock_argument(s):
 # This is only for debugging, as there is no code to handle GC
 # nor to check for out-of-data information.
 
-WEBPAGE_DEBUG = 0
+WEBPAGE_DEBUG = 1
 
 class WebCache:
     def __init__(self):
@@ -183,17 +183,11 @@ class WebPage:
 
 class MSFargDoftSmak(MSDeH):
     def elaborate_pattern(self, pattern):
-        return r'(?s)<b>%s</b>(.*?)<br>' % pattern
+        return r'(?s)%s</td>(.*?)</td>' % pattern
 
 class MSC(MS):
     def elaborate_pattern(self, pattern):
         return r'<img id="ProductDetail1_ImageProduct." src="/Images/([0-9]+).gif" alt="%s.*"' % pattern
-
-class MSF(MSDeH):
-    def elaborate_pattern(self, pattern):
-        return r'(?s)<td class="text10pxfet" .*?>%s</td>.*?<td.*?>(.*?)</td>' % pattern
-
-
 
 class MSVolym(MS):
     def clean(self, data):
@@ -216,13 +210,13 @@ class Product:
     def from_html_normal(self, webpage):
         assert self.state == NEW
 
-        m = MSet([("grupp", MSDeH(r'(?s)<td class=text10pxfetvit.*?>(.*?)</td>')),
-                  ("namn", MSDeH(r'<span class="rubrikstor">(.*?)\(nr')),
+        m = MSet([("grupp", MSDeH(r'(?s)<td.*?class="text10pxfetvit">(.*?)</td>')),
+                  ("namn", MSDeH(r'(?s)<span class="rubrikstor">(.*?)\(nr ')),
                   ("varunr", MS(r'(?s)\(nr.*?([0-9]+)')),
-                  ("distrikt", MSDeH(r'<td class="text10px">(.*?)&nbsp;')),
-                  ("producent", MSDeH(r'\((.*?)\)')),
-                  ("land", MSDeH(r'<img id="ProductDetail1_ImageFlag".*?>&nbsp;(.*?)</td>')),
-                  ("farg", MSFargDoftSmak("Färg")),
+                  ("land", MSDeH(r'ursprung=.*?>(.*?)<')),
+                  ("distrikt", MSDeH(r'(?s)Distrikt</td>(.*?)</td>')),
+                  ("alkoholhalt", MSDeH(r'(?s)Alkoholhalt</td>(.*?)</td>')),
+                  ("farg", MSFargDoftSmak("F&auml;rg")),
                   ("doft", MSFargDoftSmak("Doft")),
                   ("smak", MSFargDoftSmak("Smak")),
                   ("sotma", MSC("Sötma", advance = 0)),
@@ -230,16 +224,16 @@ class Product:
                   ("stravhet", MSC("Strävhet", advance = 0)),
                   ("fruktsyra", MSC("Fruktsyra", advance = 0)),
                   ("beska", MSC("Beska", advance = 0)),
-                  ("lagring", MSF("Lagring")),
-                  ("druvsorter", MSF("Druvsorter/råvaror")),
-                  ("alkoholhalt", MSF("Alkoholhalt")),
-                  ("argang", MSF("Provad årgång")),
-                  ("provningsdatum", MSF("Provningsdatum")),
+                  ("lagring", MSDeH(r'(?s)llbarhet.*?</td>(.*?)</td>')),
+                  ("druvsorter", MSDeH(r'(?s)Druvsorter.*?</td>(.*?)</td>')),
+                  ("argang", MSDeH(r'(?s)Provad &aring;r.*?</td>(.*?)</td>')),
+                  ("provningsdatum", MSDeH(r'(?s)Provningsdatum.*?</td>(.*?)</td>')),
+                  ("producent", MSDeH(r'(?s)Producent.*?</td>(.*?)</td>')),
                   ("anvandning", MSDeH(r'<td class="text10px" width="174" bgColor="#ffffff" height="10">(.*?)</td>')),
                   ])
 
         m.get_into_object(webpage, self)
-        #for k,v in self.__dict__.items(): print "%-16s = %s" % (k,v)
+        # for k,v in sorted(self.__dict__.items()): print "%-16s = %s" % (k,v)
 
         self.namn = self.namn.strip()
         if self.namn and self.varunr:
@@ -249,9 +243,9 @@ class Product:
             return self
         
         self.forpackningar = []
-        for f in MLimit(r'(?s)<th align="Left" bgcolor="#CCCCCC" width="90">Förpackning</th>(.*?)</table>', \
-                        MList("<tr",
-                              M())).get(webpage):
+        for f in MLimit(r'(?s)Var finns varan(.*?)</table>', \
+                            MList(r'<td class="text_tabell" valign="Middle"',
+                                  M())).get(webpage):
             c = Container().from_html_normal(f)
             self.forpackningar.append(c)
 
@@ -531,10 +525,10 @@ class Container:
         # as we believe the matches below need to be sequenced
         # just the way MSet does.
         
-        MSet([("namn", MS(r'<td bgcolor="#FFFFFF" width="90">(.*?)</td>')),
-              ("storlek", MS(r'<td align="Right" bgcolor="#FFFFFF" width="60">(.*?)</td>')),
+        MSet([("namn", MS(r';">(.*?)</td>')),
+              ("storlek", MS(r';">(.*?)</td>')),
               ("pris", MS(r'<td class="text10pxfet".*?>([0-9.]+)')),
-              ("anm", MSDeH(r'<td align="Center" bgcolor="#FFFFFF">(.*?)</td>')),
+              ("anm", MSDeH(r';">(.*?)</td>')),
               ]).get_into_object(webfragment,self)
         
         self.sortiment = "?"
