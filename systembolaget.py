@@ -133,7 +133,7 @@ def klock_argument(s):
 # This is only for debugging, as there is no code to handle GC
 # nor to check for out-of-data information.
 
-WEBPAGE_DEBUG = 1
+WEBPAGE_DEBUG = 0
 
 class WebCache:
     def __init__(self):
@@ -243,7 +243,7 @@ class Product:
             return self
         
         self.forpackningar = []
-        for f in MLimit(r'(?s)Var finns varan(.*?)</table>', \
+        for f in MLimit(r'(?s)Info</td>(.*?)</table>', \
                             MList(r'<td class="text_tabell" valign="Middle"',
                                   M())).get(webpage):
             c = Container().from_html_normal(f)
