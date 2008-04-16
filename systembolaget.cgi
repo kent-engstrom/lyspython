@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-# -*- coding: Latin-1 -*-
+# -*- coding: latin-1 -*-
 # (C) 2003 Kent Engström. Released under the GNU GPL.
 
 import sys; w = sys.stdout.write; err = sys.stderr.write
@@ -141,6 +141,7 @@ När rätt varor visas: välj <b>Skapa</b> för att skapa lista för utskrift.
     def html_top(self, rubrik = ""):
         if rubrik == "":
             rubrik = "Vinlista"
+	rubrik = cgi.escape(rubrik)
         w("""
 <HEAD>
 <TITLE>%s</TITLE>
