@@ -235,8 +235,8 @@ class Product:
         m.get_into_object(webpage, self)
         # for k,v in sorted(self.__dict__.items()): print "%-16s = %s" % (k,v)
 
-        self.namn = self.namn.strip()
         if self.namn and self.varunr:
+            self.namn = self.namn.strip()
             self.state = VALID
         else:
             self.state = INVALID
