@@ -211,14 +211,15 @@ class Product:
         assert self.state == NEW
 
         m = MSet([("grupp", MSDeH(r'(?s)<td.*?class="text10pxfetvit">(.*?)</td>')),
-                  ("namn", MSDeH(r'(?s)<span class="rubrikstor">(.*?)\(nr ')),
+                  ("namn", MSDeH(r'(?s)<span class="rubrikstor">(.*?)\(nr')),
                   ("varunr", MS(r'(?s)\(nr.*?([0-9]+)')),
                   ("land", MSDeH(r'ursprung=.*?>(.*?)<')),
                   ("distrikt", MSDeH(r'(?s)Distrikt</td>(.*?)</td>')),
                   ("alkoholhalt", MSDeH(r'(?s)Alkoholhalt</td>(.*?)</td>')),
-                  ("farg", MSFargDoftSmak("F&auml;rg")),
+                  ("farg", MSFargDoftSmak("Färg")),
                   ("doft", MSFargDoftSmak("Doft")),
                   ("smak", MSFargDoftSmak("Smak")),
+                  ("anvandning", MSFargDoftSmak("Användning")),
                   ("sotma", MSC("Sötma", advance = 0)),
                   ("fyllighet", MSC("Fyllighet", advance = 0)),
                   ("stravhet", MSC("Strävhet", advance = 0)),
@@ -226,10 +227,9 @@ class Product:
                   ("beska", MSC("Beska", advance = 0)),
                   ("lagring", MSDeH(r'(?s)llbarhet.*?</td>(.*?)</td>')),
                   ("druvsorter", MSDeH(r'(?s)Druvsorter.*?</td>(.*?)</td>')),
-                  ("argang", MSDeH(r'(?s)Provad &aring;r.*?</td>(.*?)</td>')),
+                  ("argang", MSDeH(r'(?s)Provad.*?årgång.*?</td>(.*?)</td>')),
                   ("provningsdatum", MSDeH(r'(?s)Provningsdatum.*?</td>(.*?)</td>')),
                   ("producent", MSDeH(r'(?s)Producent.*?</td>(.*?)</td>')),
-                  ("anvandning", MSDeH(r'<td class="text10px" width="174" bgColor="#ffffff" height="10">(.*?)</td>')),
                   ])
 
         m.get_into_object(webpage, self)
