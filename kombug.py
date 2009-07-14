@@ -1,4 +1,4 @@
-#! /usr/local/bin/python
+#! /usr/bin/env python
 
 #  This program is a LysKOM protocol A bugging program.  It listens to
 #  a port, and when a LysKOM client connects to that port it will
@@ -43,14 +43,14 @@ class kombug:
     def connect(self, host, port):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-	s.connect(host, port)
+	s.connect((host, port))
 	print "Reached", host, port
 	self.server = s
 
     def listen(self, port):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-	s.bind("", port)
+	s.bind(("", port))
 	s.listen(3)
 	(self.client, addr) = s.accept()
 	print "Client connected from", addr
@@ -95,7 +95,7 @@ class kombug:
 	    i = i + 1
 	return str[linestart:]
 
-    def relay(self):
+    def relay(self, fastmode):
 	try:
 	    os.system("stty -echo -icanon min 1 time 0 -opost")
 	    while 1:
@@ -105,36 +105,43 @@ class kombug:
 		self.eraseprompt()
 		if self.server in rfd:
 		    msg=self.server.recv(10000)
+                    if msg == "":
+                        sys.stdout.write("[eof from server]\r\n")
+                        return
 		    self.serverunparsed = self.parse(
 		       self.serverunparsed + msg, self.serverq)
 		if self.client in rfd:
 		    msg=self.client.recv(1000)
+                    if msg == "":
+                        sys.stdout.write("[eof from client]\r\n")
+                        return
 		    self.clientunparsed = self.parse(
 		       self.clientunparsed + msg, self.clientq)
+		key = None
 		if sys.stdin.fileno() in rfd:
 		    key=sys.stdin.read(1)
-		    if key == "q":
-			return
-		    elif key == "c":
-			if len(self.clientq) > 0:
-			    msg=self.clientq[0]
-			    self.server.send(msg)
-			    self.clientq[0:1]=[]
-			    sys.stdout.write("[7m" + msg + "[m")
-			    sys.stdout.flush()
-			else:
-			    sys.stdout.write('\a')
-		    elif key == "s":
-			if len(self.serverq) > 0:
-			    msg=self.serverq[0]
-			    self.client.send(msg)
-			    self.serverq[0:1]=[]
-			    sys.stdout.write(msg + "")
-			    sys.stdout.flush()
-			else:
-			    sys.stdout.write('\a')
-		    else:
+		if key == "q":
+		    return
+		if key == "c" or fastmode:
+		    if len(self.clientq) > 0:
+			msg=self.clientq[0]
+			self.server.send(msg)
+			self.clientq[0:1]=[]
+			sys.stdout.write("\033[7m" + msg + "\033[m\r")
+			sys.stdout.flush()
+		    elif not fastmode:
 			sys.stdout.write('\a')
+		if key == "s" or fastmode:
+		    if len(self.serverq) > 0:
+			msg=self.serverq[0]
+			self.client.send(msg)
+			self.serverq[0:1]=[]
+			sys.stdout.write(msg + "\r")
+			sys.stdout.flush()
+		    elif not fastmode:
+			sys.stdout.write('\a')
+		if key != None and key != "c" and key != "s":
+		    sys.stdout.write('\a')
 
 	finally:
 	    os.system("stty echo icanon opost");
@@ -150,4 +157,4 @@ if __name__ == '__main__':
     else:
 	remote_port = 4894
     b=kombug(local_port, remote_host, remote_port)
-    b.relay()
+    b.relay(0)
