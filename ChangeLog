@@ -1,3 +1,15 @@
+2009-07-14  Per Cederqvist  <ceder@lysator.liu.se>
+
+	kombug improvements.
+	* kombug.py: Use /usr/bin/env to find python.
+	(kombug.connect): Port to Python 2: connect() and bind() takes a
+	tuple, not two arguments.
+	(kombug.listen): Ditto.
+	(kombug.relay): New argument: fastmode.  When true, immediately
+	forward stuff between the client and the server.  Handle eof from
+	server and client.
+	(Top level): Pass 0 as fastmode.
+
 2005-03-03  Per Cederqvist  <ceder@ingate.com>
 
 	Declare the charset in Python files that uses iso-8859-1.
