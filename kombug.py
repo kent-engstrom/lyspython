@@ -31,6 +31,19 @@ import socket
 import select
 import string
 
+def encode(s):
+    res = ""
+    for c in s:
+        if c == "\\":
+            res += "\\\\"
+        elif (ord(c) >= 32 and ord(c) < 127) or c == "\n":
+            res += c
+        elif ord(c) < 256:
+            res += "\\x%02x" % ord(c)
+        else:
+            res += "\\badchar(%d)" % ord(c)
+    return res
+
 class kombug:
     def __init__(self, myport, host, port):
 	self.clientq=[]
@@ -100,8 +113,12 @@ class kombug:
 	    os.system("stty -echo -icanon min 1 time 0 -opost")
 	    while 1:
 		self.prompt()
+                timeout = None
+                if fastmode and len(self.clientq) + len(self.serverq) > 0:
+                    timeout = 0.0
 		(rfd, wfd, efd) = select.select([self.server, self.client,
-						 sys.stdin.fileno()], [], [])
+						 sys.stdin.fileno()], [], [],
+                                                timeout)
 		self.eraseprompt()
 		if self.server in rfd:
 		    msg=self.server.recv(10000)
@@ -127,7 +144,7 @@ class kombug:
 			msg=self.clientq[0]
 			self.server.send(msg)
 			self.clientq[0:1]=[]
-			sys.stdout.write("\033[7m" + msg + "\033[m\r")
+			sys.stdout.write("\033[7m" + encode(msg) + "\033[m\r")
 			sys.stdout.flush()
 		    elif not fastmode:
 			sys.stdout.write('\a')
@@ -136,11 +153,13 @@ class kombug:
 			msg=self.serverq[0]
 			self.client.send(msg)
 			self.serverq[0:1]=[]
-			sys.stdout.write(msg + "\r")
+			sys.stdout.write(encode(msg) + "\r")
 			sys.stdout.flush()
 		    elif not fastmode:
 			sys.stdout.write('\a')
-		if key != None and key != "c" and key != "s":
+                if key == "a":
+                    fastmode = not fastmode
+		if key != None and key != "c" and key != "s" and key != "a":
 		    sys.stdout.write('\a')
 
 	finally:

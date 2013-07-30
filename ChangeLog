@@ -1,3 +1,11 @@
+2013-07-30  Per Cederqvist  <ceder@lysator.liu.se>
+
+	kombug improvements: encode text, toggle fastmode with "a".
+	* kombug.py (encode): New function.
+	(kombug.relay): Don't block if we have a client or server queue in
+	fastmode. Encode messages before writing them to the terminal. The
+	"a" key toggles fastmode.
+
 2009-07-14  Per Cederqvist  <ceder@lysator.liu.se>
 
 	kombug improvements.
